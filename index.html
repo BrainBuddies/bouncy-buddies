@@ -2959,17 +2959,17 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     var b = state.buddy.name, y = (state.you || "").trim();
     return [
       { text: (y ? "Hi, " + y + "!" : "Hi!") + " I'm " + b + ". I help you get boring jobs done. I stay with you while you work and I cheer when you finish.", mood: "cheer" },
-      { text: "Step 1: Add your tasks. Open the Tasks tab, type up to 10 jobs and say how long each one takes. They float around me like a brainstorm. Tap a quick add idea to add a regular task in one tap.", mood: "idle" },
+      { text: "Step 1: Add your tasks. Open the Tasks tab, type up to 10 jobs and say how long each one takes. They float around me like a brainstorm.", mood: "idle" },
       { text: "Step 2: Tap one task and press Start the race. A timer counts down and I change colour as time passes. You pick the start and finish colours.", mood: "idle", demo: "colour" },
       { text: "While the timer runs, break the job into small steps. Tap me each time you finish a step and I'll cheer you on to decide what's next. If it helps, you can type a name for each step, or just tap me.", mood: "idle" },
       { text: "Finish before the timer ends and the minutes you saved go in the free time bank. 5 saved minutes wins you a bronze medal, 10 wins a silver, 15 wins a gold and 20 wins a trophy.", mood: "idle", visual: "both" },
       { text: "Each trophy earns you a 20 minute treat. Add your treats on the Treats tab: things that break you away from your tasks and bring you some joy. I nap while you enjoy your break and wake up 3 minutes before it ends.", mood: "sleep" },
-      { text: "Each finished task earns a gold star. Tap Task Tally at the top right to see them. Spend stars in the Buddy shop on things for me, like a crown, a car or a rocket ship. Your progress keeps me bouncy.", mood: "cheer", arrows: ["tally"] },
-      { text: "Tap Buddy, next to Task Tally, to change my shape, colour or name.", mood: "cheer", arrows: ["buddy"] },
+      { text: "Each finished task earns a gold star. Tap Task Tally at the top right to see me bouncing on them. Spend stars in the Buddy shop on things for me, like a crown, a car or a rocket ship. Your progress keeps me bouncy.", mood: "cheer", arrows: ["tally"] },
+      { text: "Tap Buddy, next to Task Tally, to change my shape, colour, features or name.", mood: "cheer", arrows: ["buddy"] },
       { text: "Self care: When you are deep in a task it is easy to forget to drink, eat, move or sometimes even breathe properly. When you finish a step or a task I can nudge you to sip water, have a snack, stretch, have lunch, or take a few slow breaths, and I never interrupt while you focus. Choose what to switch on under Specs, the second icon from the left at the top.", mood: "still", arrows: ["specs"] },
       { text: "Try breathing with me now: Breathe in as I get bigger, then breathe out slowly as I get smaller. Breathing focus mode supports breathing while you work. Breathing exercises are set between tasks.", mood: "still", demo: "breathe", visual: "breathe", arrows: ["specs"] },
       { text: "Tap Help at the top left any time to see these instructions again.", mood: "idle", arrows: ["help"] },
-      { text: "Remember to choose what to switch on under Specs, the second icon from the left at the top. Are you ready to add your first task?", mood: "cheer", arrows: ["specs"] }
+      { text: "Remember to choose what self-care settings to switch on under Specs. Are you ready to add your first task?", mood: "cheer", arrows: ["specs"] }
     ];
   }
   function awardsRow() {
