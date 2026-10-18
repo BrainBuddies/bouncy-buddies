@@ -1003,6 +1003,10 @@ svg[data-mouth="o"] .m-blow { display: initial; }
         <label class="lbl" for="fb-name">Your name <span class="hint">(optional)</span></label>
         <input type="text" id="fb-name" maxlength="30" autocomplete="off">
       </div>
+      <div class="field">
+        <label class="lbl" for="fb-bugs">Did anything not work?</label>
+        <textarea id="fb-bugs" rows="3" maxlength="600"></textarea>
+      </div>
       <fieldset>
         <legend>How did it feel?</legend>
         <div class="chips">
@@ -1013,7 +1017,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
         </div>
       </fieldset>
       <div class="field">
-        <label class="lbl" for="fb-who">Who is this app for?</label>
+        <label class="lbl" for="fb-who">Who do you think the app is for?</label>
         <textarea id="fb-who" rows="3" maxlength="600"></textarea>
       </div>
       <fieldset>
@@ -1062,7 +1066,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
         <textarea id="fb-worked" rows="3" maxlength="600"></textarea>
       </div>
       <div class="field">
-        <label class="lbl" for="fb-dream">Describe your dream buddy: what would it do or look like?</label>
+        <label class="lbl" for="fb-dream">Is there anything that would make it your dream buddy (what would it do or look like)?</label>
         <textarea id="fb-dream" rows="3" maxlength="600"></textarea>
       </div>
       <div class="field">
@@ -1086,11 +1090,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
         <textarea id="fb-change" rows="3" maxlength="600"></textarea>
       </div>
       <div class="field">
-        <label class="lbl" for="fb-bugs">Did anything not work?</label>
-        <textarea id="fb-bugs" rows="3" maxlength="600"></textarea>
-      </div>
-      <div class="field">
-        <label class="lbl" for="fb-out">Your feedback, ready to copy</label>
+        <label class="lbl" for="fb-out">Tap Copy my feedback, then paste it into a message to the person who shared this with you.</label>
         <textarea id="fb-out" rows="9" readonly></textarea>
       </div>
       <button type="button" class="btn btn-primary" id="fb-copy">Copy my feedback</button>
@@ -3876,8 +3876,9 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     function one(n) { return ($('input[name="' + n + '"]:checked') || {}).value || "no answer"; }
     function txt(id) { return $(id).value.trim() || "nothing mentioned"; }
     var c = awardCounts();
+    lines.push("Not working: " + txt("#fb-bugs"));
     lines.push("Overall: " + one("fbfeel"));
-    lines.push("For: " + txt("#fb-who"));
+    lines.push("Who it is for: " + txt("#fb-who"));
     lines.push("Helped me focus: " + one("fbfocus"));
     lines.push("Getting started: " + one("fbstart"));
     lines.push("The cheering: " + txt("#fb-cheer"));
@@ -3890,7 +3891,6 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     lines.push("Other ideas: " + txt("#fb-idea"));
     lines.push("Confusing: " + txt("#fb-confuse"));
     lines.push("Add or change: " + txt("#fb-change"));
-    lines.push("Not working: " + txt("#fb-bugs"));
     lines.push("Stats: " + state.total + " tasks finished, " + fmt(state.savedMs) + " saved, medals " + c.bronze + " bronze / " + c.silver + " silver / " + c.gold + " gold, trophies " + c.trophy);
     lines.push("Buddy: " + SHAPES[state.buddy.shape].label + ", " + state.buddy.style + " cheers, sound " + SFX[state.sfx].label);
     lines.push("Screen: " + window.innerWidth + "x" + window.innerHeight);
