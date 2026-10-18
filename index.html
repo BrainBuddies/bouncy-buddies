@@ -1012,15 +1012,10 @@ svg[data-mouth="o"] .m-blow { display: initial; }
           <label class="chip"><input type="radio" name="fbfeel" value="Not for me"><span>Not for me</span></label>
         </div>
       </fieldset>
-      <fieldset>
-        <legend>Who is it for?</legend>
-        <div class="chips">
-          <label class="chip"><input type="radio" name="fbwho" value="Me, I have ADHD"><span>Me, I have ADHD</span></label>
-          <label class="chip"><input type="radio" name="fbwho" value="Me, I get distracted"><span>Me, I get distracted</span></label>
-          <label class="chip"><input type="radio" name="fbwho" value="Someone I support"><span>Someone I support</span></label>
-          <label class="chip"><input type="radio" name="fbwho" value="Just curious"><span>Just curious</span></label>
-        </div>
-      </fieldset>
+      <div class="field">
+        <label class="lbl" for="fb-who">Who is this app for?</label>
+        <textarea id="fb-who" rows="3" maxlength="600"></textarea>
+      </div>
       <fieldset>
         <legend>Did the buddy help you stay on a task?</legend>
         <div class="chips">
@@ -1039,23 +1034,10 @@ svg[data-mouth="o"] .m-blow { display: initial; }
           <label class="chip"><input type="radio" name="fbstart" value="Confusing"><span>Confusing</span></label>
         </div>
       </fieldset>
-      <fieldset>
-        <legend>How much cheering felt right?</legend>
-        <div class="chips">
-          <label class="chip"><input type="radio" name="fbamount" value="Too little"><span>Too little</span></label>
-          <label class="chip"><input type="radio" name="fbamount" value="Just right"><span>Just right</span></label>
-          <label class="chip"><input type="radio" name="fbamount" value="Too much"><span>Too much</span></label>
-        </div>
-      </fieldset>
-      <fieldset>
-        <legend>Which cheer style do you like most?</legend>
-        <div class="chips">
-          <label class="chip"><input type="radio" name="fbcheer" value="Gentle"><span>Gentle</span></label>
-          <label class="chip"><input type="radio" name="fbcheer" value="Hype"><span>Hype</span></label>
-          <label class="chip"><input type="radio" name="fbcheer" value="Calm"><span>Calm</span></label>
-          <label class="chip"><input type="radio" name="fbcheer" value="A mix"><span>A mix</span></label>
-        </div>
-      </fieldset>
+      <div class="field">
+        <label class="lbl" for="fb-cheer">How did the cheering feel? What did you like, and what would you change?</label>
+        <textarea id="fb-cheer" rows="3" maxlength="600"></textarea>
+      </div>
       <fieldset>
         <legend>Does it feel like your buddy?</legend>
         <div class="chips">
@@ -1063,19 +1045,6 @@ svg[data-mouth="o"] .m-blow { display: initial; }
           <label class="chip"><input type="radio" name="fbmine" value="A bit"><span>A bit</span></label>
           <label class="chip"><input type="radio" name="fbmine" value="Not yet"><span>Not yet</span></label>
           <label class="chip"><input type="radio" name="fbmine" value="No"><span>No</span></label>
-        </div>
-      </fieldset>
-      <div class="field">
-        <label class="lbl" for="fb-want">What would you like your buddy to do or look like?</label>
-        <textarea id="fb-want" rows="3" maxlength="600"></textarea>
-      </div>
-      <fieldset>
-        <legend>Would you use it again?</legend>
-        <div class="chips">
-          <label class="chip"><input type="radio" name="fbagain" value="Every day"><span>Every day</span></label>
-          <label class="chip"><input type="radio" name="fbagain" value="Most days"><span>Most days</span></label>
-          <label class="chip"><input type="radio" name="fbagain" value="Now and then"><span>Now and then</span></label>
-          <label class="chip"><input type="radio" name="fbagain" value="Probably not"><span>Probably not</span></label>
         </div>
       </fieldset>
       <fieldset>
@@ -1088,28 +1057,16 @@ svg[data-mouth="o"] .m-blow { display: initial; }
           <label class="chip"><input type="radio" name="fbcare" value="Didn't see them"><span>Didn't see them</span></label>
         </div>
       </fieldset>
-      <fieldset>
-        <legend>What worked for you?</legend>
-        <div class="chips">
-          <label class="chip"><input type="checkbox" name="fbhelp" value="The buddy and its shapes"><span>The buddy and shapes</span></label>
-          <label class="chip"><input type="checkbox" name="fbhelp" value="Race colours"><span>Race colours</span></label>
-          <label class="chip"><input type="checkbox" name="fbhelp" value="Tapping to finish steps"><span>Tapping steps</span></label>
-          <label class="chip"><input type="checkbox" name="fbhelp" value="Cheers and sounds"><span>Cheers and sounds</span></label>
-          <label class="chip"><input type="checkbox" name="fbhelp" value="Free time bank and breaks"><span>Free time and breaks</span></label>
-          <label class="chip"><input type="checkbox" name="fbhelp" value="Medals and trophies"><span>Medals and trophies</span></label>
-          <label class="chip"><input type="checkbox" name="fbhelp" value="Treat clouds"><span>Treat clouds</span></label>
-          <label class="chip"><input type="checkbox" name="fbhelp" value="Buddy shop and scenes"><span>Buddy shop</span></label>
-          <label class="chip"><input type="checkbox" name="fbhelp" value="The task board"><span>The task board</span></label>
-          <label class="chip"><input type="checkbox" name="fbhelp" value="Task Tally"><span>Task Tally</span></label>
-          <label class="chip"><input type="checkbox" name="fbhelp" value="The intro"><span>The intro</span></label>
-        </div>
-      </fieldset>
       <div class="field">
-        <label class="lbl" for="fb-dream">Describe your dream buddy</label>
+        <label class="lbl" for="fb-worked">What worked for you?</label>
+        <textarea id="fb-worked" rows="3" maxlength="600"></textarea>
+      </div>
+      <div class="field">
+        <label class="lbl" for="fb-dream">Describe your dream buddy: what would it do or look like?</label>
         <textarea id="fb-dream" rows="3" maxlength="600"></textarea>
       </div>
       <div class="field">
-        <label class="lbl" for="fb-daily">What would make you use it every day?</label>
+        <label class="lbl" for="fb-daily">Would you use it again? When, and what would make you use it every day?</label>
         <textarea id="fb-daily" rows="3" maxlength="600"></textarea>
       </div>
       <div class="field">
@@ -3914,31 +3871,26 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   /* pilot feedback: testers copy their notes and paste them into a message */
   function fbText() {
     var from = $("#fb-name").value.trim();
-    var feel = ($('input[name="fbfeel"]:checked') || {}).value || "";
-    var helped = $$('input[name="fbhelp"]:checked').map(function (i) { return i.value; });
-    var c = awardCounts();
     var lines = ["Bouncy Buddies pilot feedback"];
     if (from) lines.push("From: " + from);
-    lines.push("Overall: " + (feel || "no answer"));
-    lines.push("What worked: " + (helped.length ? helped.join(", ") : "no answer"));
     function one(n) { return ($('input[name="' + n + '"]:checked') || {}).value || "no answer"; }
-    function many(n) { var a = $$('input[name="' + n + '"]:checked').map(function (i) { return i.value; }); return a.length ? a.join(", ") : "no answer"; }
-    lines.push("For: " + one("fbwho"));
+    function txt(id) { return $(id).value.trim() || "nothing mentioned"; }
+    var c = awardCounts();
+    lines.push("Overall: " + one("fbfeel"));
+    lines.push("For: " + txt("#fb-who"));
     lines.push("Helped me focus: " + one("fbfocus"));
     lines.push("Getting started: " + one("fbstart"));
-    lines.push("Amount of cheering: " + one("fbamount"));
-    lines.push("Favourite cheer style: " + one("fbcheer"));
+    lines.push("The cheering: " + txt("#fb-cheer"));
     lines.push("Feels like my buddy: " + one("fbmine"));
-    lines.push("Buddy to do or look like: " + ($("#fb-want").value.trim() || "nothing mentioned"));
-    lines.push("Dream buddy: " + ($("#fb-dream").value.trim() || "nothing mentioned"));
+    lines.push("Dream buddy: " + txt("#fb-dream"));
     lines.push("Self-care prompts: " + one("fbcare"));
-    lines.push("Would use again: " + one("fbagain"));
-    lines.push("To use it every day: " + ($("#fb-daily").value.trim() || "nothing mentioned"));
-    lines.push("Improve first: " + ($("#fb-first").value.trim() || "nothing mentioned"));
-    lines.push("Other ideas: " + ($("#fb-idea").value.trim() || "nothing mentioned"));
-    lines.push("Confusing: " + ($("#fb-confuse").value.trim() || "nothing mentioned"));
-    lines.push("Add or change: " + ($("#fb-change").value.trim() || "nothing mentioned"));
-    lines.push("Not working: " + ($("#fb-bugs").value.trim() || "nothing mentioned"));
+    lines.push("What worked: " + txt("#fb-worked"));
+    lines.push("Using it again and every day: " + txt("#fb-daily"));
+    lines.push("Improve first: " + txt("#fb-first"));
+    lines.push("Other ideas: " + txt("#fb-idea"));
+    lines.push("Confusing: " + txt("#fb-confuse"));
+    lines.push("Add or change: " + txt("#fb-change"));
+    lines.push("Not working: " + txt("#fb-bugs"));
     lines.push("Stats: " + state.total + " tasks finished, " + fmt(state.savedMs) + " saved, medals " + c.bronze + " bronze / " + c.silver + " silver / " + c.gold + " gold, trophies " + c.trophy);
     lines.push("Buddy: " + SHAPES[state.buddy.shape].label + ", " + state.buddy.style + " cheers, sound " + SFX[state.sfx].label);
     lines.push("Screen: " + window.innerWidth + "x" + window.innerHeight);
