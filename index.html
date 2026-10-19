@@ -1827,7 +1827,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
 
   var state = {
     buddy: { name: "Pip", style: "gentle", shape: "blob" }, you: "", hasBuddy: false, sound: true, log: {}, recent: [],
-    race: { start: "tangerine", finish: "aqua" }, bankMs: 0, goalMin: 15, breakEnd: 0, breakTotal: 0, tasks: [], done: [], treats: [], treatDue: 0, treatsSeen: false, breakTreat: "", shop: { owned: {}, off: {} }, lastScene: "", care: {}
+    race: { start: "tangerine", finish: "aqua" }, bankMs: 0, goalMin: 15, breakEnd: 0, breakTotal: 0, tasks: [], done: [], treats: [], treatDue: 0, treatsSeen: false, breakTreat: "", shop: { owned: {}, off: {} }, lastScene: "", care: {}, durFor: {}
   };
   var PRISTINE = JSON.stringify(state);
   try {
@@ -1870,6 +1870,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   if (!state.shop.owned || typeof state.shop.owned !== "object") state.shop.owned = {};
   if (!state.shop.off || typeof state.shop.off !== "object") state.shop.off = {};
   if (typeof state.lastScene !== "string") state.lastScene = "";
+  if (!state.durFor || typeof state.durFor !== "object" || Array.isArray(state.durFor)) state.durFor = {};
   if (!Array.isArray(state.done)) state.done = [];
   state.done = state.done.filter(function (x) { return x && typeof x.t === "string"; }).slice(-12);
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
@@ -2043,7 +2044,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     Object.keys(state).forEach(function (k) { delete state[k]; });
     Object.assign(state, JSON.parse(PRISTINE), {
       care: { on: false, water: true, food: true, snack: true, lunch: true, move: true, lastWater: 0, lastFood: 0, lastMove: 0, lunchDay: "", snooze: {}, lastPrompt: 0, lunchAsked: "", from: "12:00", to: "14:00" },
-      total: 0, savedMs: 0, sfx: "harp", tasks: [], treats: [], done: [], recent: [], log: {}, goalMin: 20, introSeen: false
+      total: 0, savedMs: 0, sfx: "harp", tasks: [], treats: [], done: [], recent: [], log: {}, goalMin: 20, introSeen: false, durFor: {}
     });
     state.buddy.extras = [];
     save();
@@ -2433,6 +2434,8 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     if (state.tasks.length >= MAX_TASKS) { boardSay("The board is full. Finish one and there's room for more."); return false; }
     if (state.tasks.some(function (x) { return x.t.toLowerCase() === t.toLowerCase(); })) { boardSay("That one is already on the board."); return false; }
     var m = parseInt($("#add-m").value, 10) || 25;
+    var learned = state.durFor[t.toLowerCase()];
+    if (typeof learned === "number" && learned > 0) m = learned;
     state.tasks.push({ id: Date.now() * 100 + Math.floor(Math.random() * 100), t: t.slice(0, 80), m: m });
     save();
     renderBoard();
@@ -2827,7 +2830,13 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     var now = Date.now();
     var rem = s.endAt - now;
     var mins = Math.round((now - s.startedAt) / 60000);
-    var saved = byTimer ? 0 : Math.max(0, s.plan - (now - s.startedAt));
+    var elapsed = now - s.startedAt;
+    var saved = byTimer ? 0 : Math.max(0, s.plan - elapsed);
+    var over = elapsed > s.plan + 15000;
+    var actualMin = Math.max(1, Math.round(elapsed / 60000));
+    var newMin = actualMin;
+    for (var di = 0; di < DUR_OPTS.length; di++) { if (DUR_OPTS[di] >= actualMin) { newMin = DUR_OPTS[di]; break; } }
+    if (over) state.durFor[s.task.toLowerCase()] = newMin;
     endSession();
     var wBefore = warmth();
     var k = todayKey();
@@ -2845,7 +2854,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     var newAwards = [];
     for (var q = kBefore; q < kAfter; q++) newAwards.push({ kind: AWARD_KINDS[q % 4], mins: (q + 1) * 5 });
     var goalMs = state.goalMin * 60000;
-    var earned = state.bankMs >= goalMs;
+    var earned = state.bankMs >= goalMs && !over;
     var gotTrophy = newAwards.filter(function (a) { return a.kind === "trophy"; }).length;
     state.treatDue += gotTrophy;
     save();
@@ -2853,6 +2862,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     var w = warmth();
     $("#done-msg").textContent = wellDone(nm(earned ? pick(msgs().breakMsg, "breakMsg") : pick(msgs().done[w], "done" + w)));
     var parts = [], mile = milestone();
+    if (over) parts.push("That took " + actualMin + " min. You planned " + Math.round(s.plan / 60000) + ". No time saved this time. Next time this task starts at " + newMin + " min.");
     if (mile) parts.push(mile);
     if (w > wBefore) parts.push(state.buddy.name + " is getting more excited about you.");
     if (gotTrophy) parts.push("A trophy earns you a treat. Time to choose one.");
@@ -2863,7 +2873,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     noteEl.hidden = parts.length === 0;
     renderDoneAwards(newAwards);
     $("#d-task").textContent = s.task;
-    $("#d-race").textContent = (!byTimer && rem >= 1000) ? "Beat the clock by " + fmt(rem) : "Finished right on time";
+    $("#d-race").textContent = over ? "Took " + actualMin + " min (planned " + Math.round(s.plan / 60000) + ")" : ((!byTimer && rem >= 1000) ? "Beat the clock by " + fmt(rem) : "Finished right on time");
     $("#d-saved").textContent = saved >= 1000 ? "+" + fmt(saved) : "None";
     $("#d-bank").textContent = fmt(state.bankMs) + " of " + state.goalMin + " min";
     $("#d-steps-row").hidden = s.stepsDone === 0;
