@@ -235,6 +235,7 @@ svg[data-mood="sleep"] .b-arm-r { transform: rotate(-50deg); }
 .task-bubble span { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .task-bubble.dense { width: 25%; min-width: 74px; font-size: 0.78rem; padding: 5px 6px; }
 .task-bubble.dense span { -webkit-line-clamp: 2; }
+.task-bubble:not(.sel) { background: var(--tc, var(--surface)); color: #1A1F1E; border-color: color-mix(in srgb, var(--tc, var(--line)) 70%, #1A1F1E); }
 .task-bubble.sel { background: var(--buddy); color: var(--on-buddy); border-color: var(--ink); z-index: 2; animation: none; transform: translate(-50%, -50%) scale(1.1); }
 @keyframes tbob { 0%, 100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, calc(-50% - 4px)); } }
 .add-row { display: flex; gap: 8px; }
@@ -897,7 +898,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     <details class="fold" id="fold-bank" hidden>
       <summary><span class="fold-t">Free time bank</span><span class="fold-s" id="bank-sum"></span></summary>
       <div class="bank">
-        <p class="hint">Finish a task before its timer ends and the minutes you saved go in the bank. When the bank reaches your goal you earn a break. The break lasts as long as the time you saved.</p>
+        <p class="hint">Finish a task before its timer ends and the minutes you saved go in the bank. When the bank reaches your goal you earn a break. The break lasts as long as the time you saved. The bank starts empty each morning.</p>
         <div class="meter" aria-hidden="true"><i id="bank-fill"></i></div>
         <p class="bank-text" id="bank-text"></p>
         <fieldset>
@@ -1827,7 +1828,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
 
   var state = {
     buddy: { name: "Pip", style: "gentle", shape: "blob" }, you: "", hasBuddy: false, sound: true, log: {}, recent: [],
-    race: { start: "tangerine", finish: "aqua" }, bankMs: 0, goalMin: 15, breakEnd: 0, breakTotal: 0, tasks: [], done: [], treats: [], treatDue: 0, treatsSeen: false, breakTreat: "", shop: { owned: {}, off: {} }, lastScene: "", care: {}, durFor: {}
+    race: { start: "tangerine", finish: "aqua" }, bankMs: 0, goalMin: 15, breakEnd: 0, breakTotal: 0, tasks: [], done: [], treats: [], treatDue: 0, treatsSeen: false, breakTreat: "", shop: { owned: {}, off: {} }, lastScene: "", care: {}, durFor: {}, bankDay: ""
   };
   var PRISTINE = JSON.stringify(state);
   try {
@@ -1857,7 +1858,16 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   if (!SFX[state.sfx] || SFX_KEYS.indexOf(state.sfx) < 0) state.sfx = "harp";
   if (!Array.isArray(state.tasks)) state.tasks = [];
   state.tasks = state.tasks.filter(function (x) { return x && typeof x.t === "string" && x.t && typeof x.id === "number"; }).slice(0, 10)
-    .map(function (x) { return { id: x.id, t: x.t, m: typeof x.m === "number" && x.m > 0 ? x.m : 25 }; });
+    .map(function (x) { return { id: x.id, t: x.t, m: typeof x.m === "number" && x.m > 0 ? x.m : 25, c: typeof x.c === "number" && x.c >= 0 && x.c < 10 ? Math.floor(x.c) : -1 }; });
+  (function () {
+    var seen = {};
+    state.tasks.forEach(function (x) { if (x.c >= 0 && !seen[x.c]) seen[x.c] = true; else x.c = -1; });
+    state.tasks.forEach(function (x) {
+      if (x.c >= 0) return;
+      for (var i = 0; i < 10; i++) if (!seen[i]) { seen[i] = true; x.c = i; return; }
+      x.c = 0;
+    });
+  })();
   if (!Array.isArray(state.treats)) state.treats = [];
   state.treats = state.treats.filter(function (x) { return x && typeof x.t === "string" && x.t && typeof x.id === "number"; }).slice(0, 10);
   if (typeof state.treatDue !== "number" || state.treatDue < 0) state.treatDue = 0;
@@ -1875,6 +1885,16 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   state.done = state.done.filter(function (x) { return x && typeof x.t === "string"; }).slice(-12);
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
   function todayKey() { return new Date().toLocaleDateString("en-CA"); }
+  /* the free time bank starts empty every morning; medals, trophies and stars are kept */
+  function rolloverBank() {
+    var k = todayKey();
+    if (state.bankDay === k) return false;
+    state.bankDay = k;
+    state.bankMs = 0;
+    save();
+    return true;
+  }
+  rolloverBank();
   function todayCount() { return state.log[todayKey()] || 0; }
 
   /* put the user's name before the final punctuation of a line */
@@ -2044,7 +2064,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     Object.keys(state).forEach(function (k) { delete state[k]; });
     Object.assign(state, JSON.parse(PRISTINE), {
       care: { on: false, water: true, food: true, snack: true, lunch: true, move: true, lastWater: 0, lastFood: 0, lastMove: 0, lunchDay: "", snooze: {}, lastPrompt: 0, lunchAsked: "", from: "12:00", to: "14:00" },
-      total: 0, savedMs: 0, sfx: "harp", tasks: [], treats: [], done: [], recent: [], log: {}, goalMin: 20, introSeen: false, durFor: {}
+      total: 0, savedMs: 0, sfx: "harp", tasks: [], treats: [], done: [], recent: [], log: {}, goalMin: 20, introSeen: false, durFor: {}, bankDay: todayKey()
     });
     state.buddy.extras = [];
     save();
@@ -2302,6 +2322,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
 
   /* home: free time bank */
   function renderBank() {
+    rolloverBank();
     var goalMs = state.goalMin * 60000;
     var full = state.bankMs >= goalMs;
     $$('input[name="goal"]').forEach(function (i) { i.checked = parseInt(i.value, 10) === state.goalMin; });
@@ -2375,6 +2396,12 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     var y = (state.you || "").trim();
     return "Choose your task, we've got this" + (y ? " " + y : "") + ".";
   }
+  var TASK_COLOURS = ["#FFD1DC", "#FFDFBA", "#FFF5BA", "#D4F4C4", "#BAF0DC", "#BFE3FF", "#D9CCFF", "#F0C9F2", "#FFC9C0", "#C2F0F5"];
+  function nextTaskColour() {
+    var used = state.tasks.map(function (x) { return x.c; });
+    for (var i = 0; i < TASK_COLOURS.length; i++) if (used.indexOf(i) < 0) return i;
+    return state.tasks.length % TASK_COLOURS.length;
+  }
   function findTask(id) {
     for (var i = 0; i < state.tasks.length; i++) if (state.tasks[i].id === id) return state.tasks[i];
     return null;
@@ -2393,6 +2420,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
         var b = document.createElement("button");
         b.type = "button";
         b.className = "task-bubble" + (dense ? " dense" : "") + (tk.id === selId ? " sel" : "");
+        b.style.setProperty("--tc", TASK_COLOURS[(tk.c || 0) % TASK_COLOURS.length]);
         b.style.left = (50 + rx * Math.cos(ang)) + "%";
         b.style.top = (50 + ry * Math.sin(ang)) + "%";
         b.style.setProperty("--dl", (-(k * 0.7 + Math.random() * 1.2)).toFixed(2) + "s");
@@ -2436,7 +2464,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     var m = parseInt($("#add-m").value, 10) || 25;
     var learned = state.durFor[t.toLowerCase()];
     if (typeof learned === "number" && learned > 0) m = learned;
-    state.tasks.push({ id: Date.now() * 100 + Math.floor(Math.random() * 100), t: t.slice(0, 80), m: m });
+    state.tasks.push({ id: Date.now() * 100 + Math.floor(Math.random() * 100), t: t.slice(0, 80), m: m, c: nextTaskColour() });
     save();
     renderBoard();
     boardSay(selId == null ? homeLine() : "Added. Pick a task when you're ready.");
@@ -2797,6 +2825,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     if (document.visibilityState !== "visible") return;
     if (session) { lock(); tick(); }
     else if (document.body.dataset.view === "break" && state.breakEnd) { breakTick(); }
+    else if (document.body.dataset.view === "home" && rolloverBank()) { renderBank(); }
   });
 
   $("#btn-more").addEventListener("click", function () {
@@ -2847,6 +2876,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     state.recent = [s.task].concat(state.recent.filter(function (t) { return t !== s.task; })).slice(0, 5);
     if (s.taskId != null) state.tasks = state.tasks.filter(function (x) { return x.id !== s.taskId; });
     state.done = (state.done || []).concat([{ t: s.task, d: k }]).slice(-12);
+    rolloverBank();
     state.bankMs += saved;
     var kBefore = Math.floor(state.savedMs / AWARD_EVERY);
     state.savedMs += saved;
@@ -2862,7 +2892,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     var w = warmth();
     $("#done-msg").textContent = wellDone(nm(earned ? pick(msgs().breakMsg, "breakMsg") : pick(msgs().done[w], "done" + w)));
     var parts = [], mile = milestone();
-    if (over) parts.push("That took " + actualMin + " min. You planned " + Math.round(s.plan / 60000) + ". No time saved this time. Next time this task starts at " + newMin + " min.");
+    if (over) parts.push("That one needed " + actualMin + " minutes. I've set it to " + newMin + " next time.");
     if (mile) parts.push(mile);
     if (w > wBefore) parts.push(state.buddy.name + " is getting more excited about you.");
     if (gotTrophy) parts.push("A trophy earns you a treat. Time to choose one.");
