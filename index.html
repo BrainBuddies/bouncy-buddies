@@ -235,6 +235,11 @@ svg[data-mood="sleep"] .b-arm-r { transform: rotate(-50deg); }
 .task-bubble span { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .task-bubble.dense { width: 25%; min-width: 74px; font-size: 0.78rem; padding: 5px 6px; }
 .task-bubble.dense span { -webkit-line-clamp: 2; }
+.board-buddy.nap { animation: napfloat 5s ease-in-out infinite; }
+.board-buddy.nap::after { content: "z z"; position: absolute; right: -10px; top: -4px; font: 700 1.15rem var(--font-display); line-height: 1; letter-spacing: 0.1em; color: var(--muted); animation: zzz 2.8s ease-out infinite; pointer-events: none; }
+@keyframes napfloat { 0%, 100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, calc(-50% - 12px)); } }
+@keyframes zzz { 0% { opacity: 0; transform: translate(0, 6px) scale(0.8); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(8px, -22px) scale(1.2); } }
+@media (prefers-reduced-motion: reduce) { .board-buddy.nap, .board-buddy.nap::after { animation: none; } }
 .task-bubble:not(.sel) { background: var(--tc, var(--surface)); color: #1A1F1E; border-color: color-mix(in srgb, var(--tc, var(--line)) 70%, #1A1F1E); }
 .task-bubble.sel { background: var(--buddy); color: var(--on-buddy); border-color: var(--ink); z-index: 2; animation: none; transform: translate(-50%, -50%) scale(1.1); }
 @keyframes tbob { 0%, 100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, calc(-50% - 4px)); } }
@@ -2443,6 +2448,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   function selectTask(id) {
     var tk = findTask(id);
     if (!tk) return;
+    wakeHome(true);
     selId = id;
     $("#in-task").value = tk.t;
     $("#sel-name").textContent = tk.t;
@@ -2459,6 +2465,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   function tryAdd(text) {
     var t = (text || "").trim();
     if (!t) return false;
+    wakeHome(true);
     if (state.tasks.length >= MAX_TASKS) { boardSay("The board is full. Finish one and there's room for more."); return false; }
     if (state.tasks.some(function (x) { return x.t.toLowerCase() === t.toLowerCase(); })) { boardSay("That one is already on the board."); return false; }
     var m = parseInt($("#add-m").value, 10) || 25;
@@ -2494,6 +2501,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     }
   }
   function goHome(note) {
+    homeNap = false; $("#home-buddy").classList.remove("nap");
     applyColour(hexOf(state.race.start));
     setupRacePickers();
     renderPicks(); renderTally(); renderBank(); renderCabinet(); renderTTBtn(); renderTreatNow();
@@ -2504,7 +2512,32 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     $("#task-err").hidden = true;
     setMood("home-buddy", "idle");
     show("home");
+    if (napNext && !note) { napNext = false; napHome(); }
   }
+
+  /* the buddy naps on the task page when you open or come back to the app, and wakes when you touch anything */
+  var napNext = true, hiddenAt = 0, homeNap = false;
+  function napHome() {
+    if (document.body.dataset.view !== "home" || session) return;
+    homeNap = true;
+    setMood("home-buddy", "sleep");
+    $("#home-buddy").classList.add("nap");
+    boardSay(nm("Zzz. Tap me when you're ready."));
+  }
+  function wakeHome(quiet) {
+    if (!homeNap) return;
+    homeNap = false;
+    $("#home-buddy").classList.remove("nap");
+    setMood("home-buddy", "cheer");
+    setTimeout(function () { if (document.body.dataset.view === "home") setMood("home-buddy", "idle"); }, 1100);
+    if (!quiet) boardSay(nm("I'm awake. Pick a task."));
+  }
+  $("#home-buddy").addEventListener("click", function () { wakeHome(false); });
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden") { hiddenAt = Date.now(); return; }
+    if (hiddenAt && Date.now() - hiddenAt > 20000 && document.body.dataset.view === "home" && !session) napHome();
+    hiddenAt = 0;
+  });
 
   /* session */
   var session = null, timer = null;
