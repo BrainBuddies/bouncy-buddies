@@ -235,6 +235,9 @@ svg[data-mood="sleep"] .b-arm-r { transform: rotate(-50deg); }
 .task-bubble span { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .task-bubble.dense { width: 25%; min-width: 74px; font-size: 0.78rem; padding: 5px 6px; }
 .task-bubble.dense span { -webkit-line-clamp: 2; }
+.break-banner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; padding: 10px 14px; border-radius: 16px; border: 2px solid var(--buddy); background: color-mix(in srgb, var(--buddy) 12%, var(--surface)); font-weight: 600; }
+.break-banner[hidden] { display: none; }
+.break-banner b { font-variant-numeric: tabular-nums; }
 .board-buddy.nap { animation: napfloat 5s ease-in-out infinite; }
 .board-buddy.nap::after { content: "z z"; position: absolute; right: -10px; top: -4px; font: 700 1.15rem var(--font-display); line-height: 1; letter-spacing: 0.1em; color: var(--muted); animation: zzz 2.8s ease-out infinite; pointer-events: none; }
 @keyframes napfloat { 0%, 100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, calc(-50% - 12px)); } }
@@ -853,6 +856,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   <!-- Home -->
   <section class="view" id="view-home" hidden>
     <h1 class="vh">Tasks</h1>
+    <div class="break-banner" id="break-banner" role="status" hidden><span>Break in progress: <b id="bb-time"></b></span><button type="button" class="btn btn-primary btn-sm" id="bb-back">Back to my break</button></div>
     <div class="tabs" role="tablist">
       <button type="button" role="tab" class="tab tab-tasks" aria-selected="true">Tasks</button>
       <button type="button" role="tab" class="tab tab-treats" aria-selected="false">Treats</button>
@@ -1142,6 +1146,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     <div class="bubble" id="break-bubble" aria-live="polite" hidden></div>
     <div class="time" id="break-time" role="timer" aria-label="Break time left">15:00</div>
     <p class="center sub" id="break-sub">Go and do something cool. Your buddy is having a nap.</p>
+    <button type="button" class="btn btn-ghost" id="btn-break-peek">Look at my tasks</button>
     <button type="button" class="btn btn-ghost" id="btn-break-end">End break early</button>
   </section>
 
@@ -2335,7 +2340,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     $("#bank-text").textContent = full
       ? "Bank is full: " + fmt(state.bankMs) + " saved. Break time is ready."
       : fmt(state.bankMs) + " saved of " + state.goalMin + " min";
-    $("#btn-break-now").hidden = !full;
+    $("#btn-break-now").hidden = !full || breakRunning();
     $("#bank-sum").textContent = full ? "Full: break ready" : fmt(state.bankMs) + " of " + state.goalMin + " min";
   }
   $$('input[name="goal"]').forEach(function (i) {
@@ -2512,17 +2517,19 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     $("#task-err").hidden = true;
     setMood("home-buddy", "idle");
     show("home");
-    if (napNext && !note) { napNext = false; napHome(); }
+    renderBreakBanner();
+    if (breakRunning()) { napNext = false; napHome("I'm napping until your break ends."); }
+    else if (napNext && !note) { napNext = false; napHome(); }
   }
 
   /* the buddy naps on the task page when you open or come back to the app, and wakes when you touch anything */
   var napNext = true, hiddenAt = 0, homeNap = false;
-  function napHome() {
+  function napHome(msg) {
     if (document.body.dataset.view !== "home" || session) return;
     homeNap = true;
     setMood("home-buddy", "sleep");
     $("#home-buddy").classList.add("nap");
-    boardSay(nm("Zzz. Tap me when you're ready."));
+    boardSay(nm(msg || "Zzz. Tap me when you're ready."));
   }
   function wakeHome(quiet) {
     if (!homeNap) return;
@@ -2535,7 +2542,8 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   $("#home-buddy").addEventListener("click", function () { wakeHome(false); });
   document.addEventListener("visibilitychange", function () {
     if (document.visibilityState === "hidden") { hiddenAt = Date.now(); return; }
-    if (hiddenAt && Date.now() - hiddenAt > 20000 && document.body.dataset.view === "home" && !session) napHome();
+    if (document.body.dataset.view === "home") { if (state.breakEnd) breakTick(); renderBreakBanner(); }
+    if (hiddenAt && Date.now() - hiddenAt > 20000 && document.body.dataset.view === "home" && !session && !breakRunning()) napHome();
     hiddenAt = 0;
   });
 
@@ -2731,6 +2739,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     var task = $("#in-task").value.trim();
     if (!task) { $("#task-err").hidden = false; return; }
     var step = $("#in-step").value.trim();
+    if (state.breakEnd) { clearInterval(breakTimer); breakTimer = null; state.breakEnd = 0; state.breakTotal = 0; state.breakTreat = ""; save(); }
     var mins = parseInt(($('input[name="dur"]:checked') || {}).value || "10", 10);
     ensureAudio(); lock();
     var now = Date.now();
@@ -2981,8 +2990,15 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     save();
     enterBreak();
   }
+  function breakRunning() { return state.breakEnd > Date.now(); }
+  function renderBreakBanner() {
+    var on = breakRunning();
+    $("#break-banner").hidden = !on;
+    if (on) $("#bb-time").textContent = fmt(state.breakEnd - Date.now());
+  }
   function enterBreak() {
     breakAwake = false;
+    $("#btn-break-peek").hidden = false;
     applyColour(hexOf(state.race.finish));
     renderSlot("break-buddy");
     setMood("break-buddy", "sleep");
@@ -3000,6 +3016,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   }
   function wakeBuddy() {
     breakAwake = true;
+    $("#btn-break-peek").hidden = true;
     $("#zzz").hidden = true;
     var bub = $("#break-bubble");
     bub.textContent = nm(pick(msgs().wakeMsg, "wake"));
@@ -3017,9 +3034,16 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     $("#break-time").textContent = fmt(rem);
     var wakeAt = Math.min(WAKE_MS, state.breakTotal / 2);
     if (!breakAwake && rem <= wakeAt) wakeBuddy();
+    if (document.body.dataset.view === "home") renderBreakBanner();
     if (rem <= 0) {
       $("#break-sub").textContent = "Break's over.";
       clearInterval(breakTimer); breakTimer = null;
+      if (document.body.dataset.view !== "break") {
+        /* the break ended while you were looking at your tasks */
+        state.breakEnd = 0; state.breakTotal = 0; state.breakTreat = ""; save();
+        renderBreakBanner(); renderBank();
+        if (document.body.dataset.view === "home") { wakeHome(true); boardSay(nm("Break's over. Pick a task when you're ready.")); }
+      }
     }
   }
   function endBreak() {
@@ -3029,6 +3053,9 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     goHome();
   }
   $("#btn-break-end").addEventListener("click", endBreak);
+  /* look at your tasks while the break keeps running */
+  $("#btn-break-peek").addEventListener("click", function () { goHome(); });
+  $("#bb-back").addEventListener("click", enterBreak);
 
   /* intro: the buddy explains how the app works */
   var introI = 0, introDemo = null;
