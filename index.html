@@ -235,15 +235,6 @@ svg[data-mood="sleep"] .b-arm-r { transform: rotate(-50deg); }
 .task-bubble span { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .task-bubble.dense { width: 25%; min-width: 74px; font-size: 0.78rem; padding: 5px 6px; }
 .task-bubble.dense span { -webkit-line-clamp: 2; }
-.break-banner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; padding: 10px 14px; border-radius: 16px; border: 2px solid var(--buddy); background: color-mix(in srgb, var(--buddy) 12%, var(--surface)); font-weight: 600; }
-.break-banner[hidden] { display: none; }
-.break-banner b { font-variant-numeric: tabular-nums; }
-.board-buddy.nap { animation: napfloat 5s ease-in-out infinite; }
-.board-buddy.nap::after { content: "z z"; position: absolute; right: -10px; top: -4px; font: 700 1.15rem var(--font-display); line-height: 1; letter-spacing: 0.1em; color: var(--muted); animation: zzz 2.8s ease-out infinite; pointer-events: none; }
-@keyframes napfloat { 0%, 100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, calc(-50% - 12px)); } }
-@keyframes zzz { 0% { opacity: 0; transform: translate(0, 6px) scale(0.8); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(8px, -22px) scale(1.2); } }
-@media (prefers-reduced-motion: reduce) { .board-buddy.nap, .board-buddy.nap::after { animation: none; } }
-.task-bubble:not(.sel) { background: var(--tc, var(--surface)); color: #1A1F1E; border-color: color-mix(in srgb, var(--tc, var(--line)) 70%, #1A1F1E); }
 .task-bubble.sel { background: var(--buddy); color: var(--on-buddy); border-color: var(--ink); z-index: 2; animation: none; transform: translate(-50%, -50%) scale(1.1); }
 @keyframes tbob { 0%, 100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, calc(-50% - 4px)); } }
 .add-row { display: flex; gap: 8px; }
@@ -642,6 +633,18 @@ svg[data-mouth="o"]:not([data-mood="cheer"]):not([data-mood="sleep"]) .m-blow { 
 .step-side input::placeholder { color: var(--muted); font-weight: 600; }
 .stage-row .step-side input, .stage-row .step-side input:focus, .stage-row .step-side input:focus-visible { border: 0; outline: 0; box-shadow: none; min-height: 0; border-radius: 0; background: transparent; padding: 4px 0; text-align: left; }
 .step-side .step-tag { flex: none; white-space: nowrap; }
+.bs-list { display: grid; gap: 8px; margin-block: 10px; }
+.bs-item { display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; text-align: left; font: inherit; font-weight: 700; color: var(--ink); background: var(--surface); border: 2px solid var(--line); border-radius: 16px; padding: 10px 12px; }
+.bs-item span.bs-t { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.bs-x { flex: none; border: 0; background: transparent; color: var(--muted); font: inherit; font-weight: 700; font-size: 1.2rem; min-width: 44px; min-height: 44px; cursor: pointer; border-radius: 12px; }
+.bs-num { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 2px dashed var(--line); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; color: var(--muted); }
+button.bs-item { cursor: pointer; min-height: 52px; }
+button.bs-item.on { border-color: var(--buddy); }
+button.bs-item.on .bs-num { background: var(--buddy); color: var(--on-buddy); border: 2px solid var(--buddy); }
+#view-brain .btn { width: 100%; }
+#view-brain .hint { margin-block: 6px 14px; }
+#view-brain .add-row .btn { width: auto; }
+
 .step-side #side-save { flex: none; min-height: 36px; padding: 0 14px; }
 .step-side[hidden] { display: none; }
 .step-side textarea::placeholder { color: var(--muted); font-weight: 600; }
@@ -846,6 +849,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     <div class="controls">
       <button type="button" class="btn btn-primary" id="specs-save">Save</button>
       <button type="button" class="btn-text" id="specs-cancel">Cancel</button>
+      <button type="button" class="btn btn-ghost" id="specs-feedback" hidden>Give feedback</button>
     </div>
     <div class="fold-reset">
       <p class="hint">Want to begin again? This clears your buddy, tasks, stars, treats and settings on this device.</p>
@@ -856,7 +860,6 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   <!-- Home -->
   <section class="view" id="view-home" hidden>
     <h1 class="vh">Tasks</h1>
-    <div class="break-banner" id="break-banner" role="status" hidden><span>Break in progress: <b id="bb-time"></b></span><button type="button" class="btn btn-primary btn-sm" id="bb-back">Back to my break</button></div>
     <div class="tabs" role="tablist">
       <button type="button" role="tab" class="tab tab-tasks" aria-selected="true">Tasks</button>
       <button type="button" role="tab" class="tab tab-treats" aria-selected="false">Treats</button>
@@ -893,21 +896,29 @@ svg[data-mouth="o"] .m-blow { display: initial; }
         <button type="button" class="btn-text" id="sel-remove">Take it off the board</button>
       </div>
       <input type="hidden" id="in-task" value="">
-      <div class="field">
+      <div class="field" id="in-step-field">
         <label class="lbl" for="in-step">First small step <span class="hint">(optional)</span></label>
         <input type="text" id="in-step" maxlength="80" autocomplete="off" placeholder="e.g. Open the inbox">
       </div>
       <p class="err" id="task-err" role="alert" hidden>Tap a task on the board first.</p>
       <fieldset>
+        <legend>How do you want to tackle it?</legend>
+        <div class="chips" id="tmodes">
+          <label class="chip"><input type="radio" name="tmode" value="one" checked><span>One step at a time</span></label>
+          <label class="chip"><input type="radio" name="tmode" value="brain"><span>Brainstorm it out</span></label>
+        </div>
+        <p class="hint" id="tmode-hint">Do one small step, tap me, then do the next.</p>
+      </fieldset>
+      <fieldset>
         <legend>How long for this race?</legend>
         <div class="chips" id="durations"></div>
       </fieldset>
-      <button type="submit" class="btn btn-primary">Start the race</button>
+      <button type="submit" class="btn btn-primary" id="home-go">Start the race</button>
     </form>
     <details class="fold" id="fold-bank" hidden>
       <summary><span class="fold-t">Free time bank</span><span class="fold-s" id="bank-sum"></span></summary>
       <div class="bank">
-        <p class="hint">Finish a task before its timer ends and the minutes you saved go in the bank. When the bank reaches your goal you earn a break. The break lasts as long as the time you saved. The bank starts empty each morning.</p>
+        <p class="hint">Finish a task before its timer ends and the minutes you saved go in the bank. When the bank reaches your goal you earn a break. The break lasts as long as the time you saved.</p>
         <div class="meter" aria-hidden="true"><i id="bank-fill"></i></div>
         <p class="bank-text" id="bank-text"></p>
         <fieldset>
@@ -933,6 +944,34 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     </details>
     <div class="tally" id="tally" hidden></div>
     <button type="button" class="btn btn-ghost" id="btn-feedback-home" hidden>Send feedback</button>
+  </section>
+
+  <!-- Brainstorm -->
+  <section class="view" id="view-brain" hidden>
+    <div>
+      <h1 class="center" id="bs-title">Brainstorm it out</h1>
+      <p class="center sub" id="bs-sub"></p>
+    </div>
+    <div id="bs-add-stage">
+      <form id="bs-form" class="add-form" novalidate>
+        <div class="add-row">
+          <input type="text" id="bs-in" maxlength="80" autocomplete="off" placeholder="Add a small step" aria-label="A small step">
+          <button type="submit" class="btn btn-primary btn-sm" id="bs-add">Add</button>
+        </div>
+      </form>
+      <div class="bs-list" id="bs-list"></div>
+      <p class="hint center" id="bs-count"></p>
+      <button type="button" class="btn btn-primary" id="bs-next" disabled>Put them in order</button>
+      <button type="button" class="btn-text" id="bs-cancel">Back</button>
+    </div>
+    <div id="bs-order-stage" hidden>
+      <p class="step-h center">Tap the steps in the order you will do them</p>
+      <div class="bs-list" id="bs-order"></div>
+      <p class="hint center" id="bs-ocount"></p>
+      <button type="button" class="btn btn-primary" id="bs-start">Start the race</button>
+      <button type="button" class="btn btn-ghost" id="bs-reset">Start the order again</button>
+      <button type="button" class="btn-text" id="bs-back">Back to my ideas</button>
+    </div>
   </section>
 
   <!-- Session -->
@@ -1013,10 +1052,6 @@ svg[data-mouth="o"] .m-blow { display: initial; }
         <label class="lbl" for="fb-name">Your name <span class="hint">(optional)</span></label>
         <input type="text" id="fb-name" maxlength="30" autocomplete="off">
       </div>
-      <div class="field">
-        <label class="lbl" for="fb-bugs">Did anything not work?</label>
-        <textarea id="fb-bugs" rows="3" maxlength="600"></textarea>
-      </div>
       <fieldset>
         <legend>How did it feel?</legend>
         <div class="chips">
@@ -1026,10 +1061,15 @@ svg[data-mouth="o"] .m-blow { display: initial; }
           <label class="chip"><input type="radio" name="fbfeel" value="Not for me"><span>Not for me</span></label>
         </div>
       </fieldset>
-      <div class="field">
-        <label class="lbl" for="fb-who">Who do you think the app is for?</label>
-        <textarea id="fb-who" rows="3" maxlength="600"></textarea>
-      </div>
+      <fieldset>
+        <legend>Who is it for?</legend>
+        <div class="chips">
+          <label class="chip"><input type="radio" name="fbwho" value="Me, I have ADHD"><span>Me, I have ADHD</span></label>
+          <label class="chip"><input type="radio" name="fbwho" value="Me, I get distracted"><span>Me, I get distracted</span></label>
+          <label class="chip"><input type="radio" name="fbwho" value="Someone I support"><span>Someone I support</span></label>
+          <label class="chip"><input type="radio" name="fbwho" value="Just curious"><span>Just curious</span></label>
+        </div>
+      </fieldset>
       <fieldset>
         <legend>Did the buddy help you stay on a task?</legend>
         <div class="chips">
@@ -1048,10 +1088,23 @@ svg[data-mouth="o"] .m-blow { display: initial; }
           <label class="chip"><input type="radio" name="fbstart" value="Confusing"><span>Confusing</span></label>
         </div>
       </fieldset>
-      <div class="field">
-        <label class="lbl" for="fb-cheer">How did the cheering feel? What did you like, and what would you change?</label>
-        <textarea id="fb-cheer" rows="3" maxlength="600"></textarea>
-      </div>
+      <fieldset>
+        <legend>How much cheering felt right?</legend>
+        <div class="chips">
+          <label class="chip"><input type="radio" name="fbamount" value="Too little"><span>Too little</span></label>
+          <label class="chip"><input type="radio" name="fbamount" value="Just right"><span>Just right</span></label>
+          <label class="chip"><input type="radio" name="fbamount" value="Too much"><span>Too much</span></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Which cheer style do you like most?</legend>
+        <div class="chips">
+          <label class="chip"><input type="radio" name="fbcheer" value="Gentle"><span>Gentle</span></label>
+          <label class="chip"><input type="radio" name="fbcheer" value="Hype"><span>Hype</span></label>
+          <label class="chip"><input type="radio" name="fbcheer" value="Calm"><span>Calm</span></label>
+          <label class="chip"><input type="radio" name="fbcheer" value="A mix"><span>A mix</span></label>
+        </div>
+      </fieldset>
       <fieldset>
         <legend>Does it feel like your buddy?</legend>
         <div class="chips">
@@ -1059,6 +1112,19 @@ svg[data-mouth="o"] .m-blow { display: initial; }
           <label class="chip"><input type="radio" name="fbmine" value="A bit"><span>A bit</span></label>
           <label class="chip"><input type="radio" name="fbmine" value="Not yet"><span>Not yet</span></label>
           <label class="chip"><input type="radio" name="fbmine" value="No"><span>No</span></label>
+        </div>
+      </fieldset>
+      <div class="field">
+        <label class="lbl" for="fb-want">What would you like your buddy to do or look like?</label>
+        <textarea id="fb-want" rows="3" maxlength="600"></textarea>
+      </div>
+      <fieldset>
+        <legend>Would you use it again?</legend>
+        <div class="chips">
+          <label class="chip"><input type="radio" name="fbagain" value="Every day"><span>Every day</span></label>
+          <label class="chip"><input type="radio" name="fbagain" value="Most days"><span>Most days</span></label>
+          <label class="chip"><input type="radio" name="fbagain" value="Now and then"><span>Now and then</span></label>
+          <label class="chip"><input type="radio" name="fbagain" value="Probably not"><span>Probably not</span></label>
         </div>
       </fieldset>
       <fieldset>
@@ -1071,16 +1137,28 @@ svg[data-mouth="o"] .m-blow { display: initial; }
           <label class="chip"><input type="radio" name="fbcare" value="Didn't see them"><span>Didn't see them</span></label>
         </div>
       </fieldset>
+      <fieldset>
+        <legend>What worked for you?</legend>
+        <div class="chips">
+          <label class="chip"><input type="checkbox" name="fbhelp" value="The buddy and its shapes"><span>The buddy and shapes</span></label>
+          <label class="chip"><input type="checkbox" name="fbhelp" value="Race colours"><span>Race colours</span></label>
+          <label class="chip"><input type="checkbox" name="fbhelp" value="Tapping to finish steps"><span>Tapping steps</span></label>
+          <label class="chip"><input type="checkbox" name="fbhelp" value="Cheers and sounds"><span>Cheers and sounds</span></label>
+          <label class="chip"><input type="checkbox" name="fbhelp" value="Free time bank and breaks"><span>Free time and breaks</span></label>
+          <label class="chip"><input type="checkbox" name="fbhelp" value="Medals and trophies"><span>Medals and trophies</span></label>
+          <label class="chip"><input type="checkbox" name="fbhelp" value="Treat clouds"><span>Treat clouds</span></label>
+          <label class="chip"><input type="checkbox" name="fbhelp" value="Buddy shop and scenes"><span>Buddy shop</span></label>
+          <label class="chip"><input type="checkbox" name="fbhelp" value="The task board"><span>The task board</span></label>
+          <label class="chip"><input type="checkbox" name="fbhelp" value="Task Tally"><span>Task Tally</span></label>
+          <label class="chip"><input type="checkbox" name="fbhelp" value="The intro"><span>The intro</span></label>
+        </div>
+      </fieldset>
       <div class="field">
-        <label class="lbl" for="fb-worked">What worked, or didn't work, for you?</label>
-        <textarea id="fb-worked" rows="3" maxlength="600"></textarea>
-      </div>
-      <div class="field">
-        <label class="lbl" for="fb-dream">Is there anything that would make it your dream buddy (what would it do or look like)?</label>
+        <label class="lbl" for="fb-dream">Describe your dream buddy</label>
         <textarea id="fb-dream" rows="3" maxlength="600"></textarea>
       </div>
       <div class="field">
-        <label class="lbl" for="fb-daily">Would you use it again? When, and what would make you use it every day?</label>
+        <label class="lbl" for="fb-daily">What would make you use it every day?</label>
         <textarea id="fb-daily" rows="3" maxlength="600"></textarea>
       </div>
       <div class="field">
@@ -1100,10 +1178,15 @@ svg[data-mouth="o"] .m-blow { display: initial; }
         <textarea id="fb-change" rows="3" maxlength="600"></textarea>
       </div>
       <div class="field">
-        <label class="lbl" for="fb-out">Tap Copy my feedback, then paste it into a message to the person who shared this with you.</label>
+        <label class="lbl" for="fb-bugs">Did anything not work?</label>
+        <textarea id="fb-bugs" rows="3" maxlength="600"></textarea>
+      </div>
+      <div class="field">
+        <label class="lbl" for="fb-out">Your feedback, ready to copy</label>
         <textarea id="fb-out" rows="9" readonly></textarea>
       </div>
-      <button type="button" class="btn btn-primary" id="fb-copy">Copy my feedback</button>
+      <button type="button" class="btn btn-primary" id="fb-mail">Send by email</button>
+      <button type="button" class="btn btn-ghost" id="fb-copy">Copy my feedback</button>
       <p class="note" id="fb-done" role="status" hidden></p>
       <button type="button" class="btn-text" id="fb-back">Back to the app</button>
     </form>
@@ -1121,9 +1204,14 @@ svg[data-mouth="o"] .m-blow { display: initial; }
       <div class="care-body"><b id="care-title-d"></b><span id="care-text-d"></span></div>
       <div class="care-btns"><button type="button" class="btn btn-primary btn-sm" id="care-done-d">Done</button><button type="button" class="btn btn-ghost btn-sm" id="care-later-d">Later</button></div>
     </div>
+    <div class="care-card" id="fb-card" role="status" hidden>
+      <span class="care-ico" aria-hidden="true">&#128172;</span>
+      <div class="care-body"><b>Got a minute?</b><span>You are helping to test this app. Tell me what you think so far, in your own words.</span></div>
+      <div class="care-btns"><button type="button" class="btn btn-primary btn-sm" id="fb-card-go">Tell me what you think</button><button type="button" class="btn btn-ghost btn-sm" id="fb-card-no">Not now</button></div>
+    </div>
     <div class="awards" id="done-awards" hidden></div>
     <dl class="recap">
-      <div id="d-task-row" hidden><dt>Finished</dt><dd id="d-task"></dd></div>
+      <div><dt>Finished</dt><dd id="d-task"></dd></div>
       <div><dt>Race result</dt><dd id="d-race"></dd></div>
       <div><dt>Time saved</dt><dd id="d-saved"></dd></div>
       <div><dt>Free time bank</dt><dd id="d-bank"></dd></div>
@@ -1146,7 +1234,6 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     <div class="bubble" id="break-bubble" aria-live="polite" hidden></div>
     <div class="time" id="break-time" role="timer" aria-label="Break time left">15:00</div>
     <p class="center sub" id="break-sub">Go and do something cool. Your buddy is having a nap.</p>
-    <button type="button" class="btn btn-ghost" id="btn-break-peek">Look at my tasks</button>
     <button type="button" class="btn btn-ghost" id="btn-break-end">End break early</button>
   </section>
 
@@ -1838,7 +1925,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
 
   var state = {
     buddy: { name: "Pip", style: "gentle", shape: "blob" }, you: "", hasBuddy: false, sound: true, log: {}, recent: [],
-    race: { start: "tangerine", finish: "aqua" }, bankMs: 0, goalMin: 15, breakEnd: 0, breakTotal: 0, tasks: [], done: [], treats: [], treatDue: 0, treatsSeen: false, breakTreat: "", shop: { owned: {}, off: {} }, lastScene: "", care: {}, durFor: {}, bankDay: ""
+    race: { start: "tangerine", finish: "aqua" }, bankMs: 0, goalMin: 15, breakEnd: 0, breakTotal: 0, tasks: [], done: [], treats: [], treatDue: 0, treatsSeen: false, breakTreat: "", shop: { owned: {}, off: {} }, lastScene: "", care: {}, fb: { p3: false, p10: false, given: false }
   };
   var PRISTINE = JSON.stringify(state);
   try {
@@ -1846,6 +1933,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     if (raw) { var o = JSON.parse(raw); if (o && typeof o === "object") { state = Object.assign(state, o); } }
   } catch (e) {}
   if (!state.race || !validName(state.race.start) || !validName(state.race.finish)) state.race = { start: "tangerine", finish: "aqua" };
+  if (!state.fb || typeof state.fb !== "object") state.fb = { p3: false, p10: false, given: false };
   if (!state.buddy || typeof state.buddy !== "object") state.buddy = { name: "Pip", style: "gentle", shape: "blob" };
   if (!CHEER[state.buddy.style]) state.buddy.style = "gentle";
   if (state.buddy.shape === "heart") state.buddy.shape = "puff";
@@ -1868,16 +1956,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   if (!SFX[state.sfx] || SFX_KEYS.indexOf(state.sfx) < 0) state.sfx = "harp";
   if (!Array.isArray(state.tasks)) state.tasks = [];
   state.tasks = state.tasks.filter(function (x) { return x && typeof x.t === "string" && x.t && typeof x.id === "number"; }).slice(0, 10)
-    .map(function (x) { return { id: x.id, t: x.t, m: typeof x.m === "number" && x.m > 0 ? x.m : 25, c: typeof x.c === "number" && x.c >= 0 && x.c < 10 ? Math.floor(x.c) : -1 }; });
-  (function () {
-    var seen = {};
-    state.tasks.forEach(function (x) { if (x.c >= 0 && !seen[x.c]) seen[x.c] = true; else x.c = -1; });
-    state.tasks.forEach(function (x) {
-      if (x.c >= 0) return;
-      for (var i = 0; i < 10; i++) if (!seen[i]) { seen[i] = true; x.c = i; return; }
-      x.c = 0;
-    });
-  })();
+    .map(function (x) { return { id: x.id, t: x.t, m: typeof x.m === "number" && x.m > 0 ? x.m : 25 }; });
   if (!Array.isArray(state.treats)) state.treats = [];
   state.treats = state.treats.filter(function (x) { return x && typeof x.t === "string" && x.t && typeof x.id === "number"; }).slice(0, 10);
   if (typeof state.treatDue !== "number" || state.treatDue < 0) state.treatDue = 0;
@@ -1890,21 +1969,10 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   if (!state.shop.owned || typeof state.shop.owned !== "object") state.shop.owned = {};
   if (!state.shop.off || typeof state.shop.off !== "object") state.shop.off = {};
   if (typeof state.lastScene !== "string") state.lastScene = "";
-  if (!state.durFor || typeof state.durFor !== "object" || Array.isArray(state.durFor)) state.durFor = {};
   if (!Array.isArray(state.done)) state.done = [];
   state.done = state.done.filter(function (x) { return x && typeof x.t === "string"; }).slice(-12);
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
   function todayKey() { return new Date().toLocaleDateString("en-CA"); }
-  /* the free time bank starts empty every morning; medals, trophies and stars are kept */
-  function rolloverBank() {
-    var k = todayKey();
-    if (state.bankDay === k) return false;
-    state.bankDay = k;
-    state.bankMs = 0;
-    save();
-    return true;
-  }
-  rolloverBank();
   function todayCount() { return state.log[todayKey()] || 0; }
 
   /* put the user's name before the final punctuation of a line */
@@ -1944,7 +2012,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   }
 
   /* views */
-  var VIEWS = ["specs", "setup", "home", "session", "done", "break", "intro", "feedback", "tally", "treats", "treat", "shop", "scenes", "cheers", "welcome", "breathe"];
+  var VIEWS = ["specs", "setup", "home", "session", "done", "break", "intro", "feedback", "tally", "treats", "treat", "shop", "scenes", "cheers", "welcome", "breathe", "brain"];
   function show(name) {
     if (name !== "tally") ttStop();
     if (name !== "breathe" && typeof brStop === "function") brStop();
@@ -1957,63 +2025,16 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   }
 
   /* sound */
-  var actx = null, audioUnlocked = false, keepAlive = null;
-  var isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  /* iPhones keep web audio silent until a tap unlocks it, and the ring/silent switch mutes it.
-     A looping silent clip makes iOS treat the page as media playback, which bypasses the silent switch. */
-  function silentWavUri() {
-    var n = 800, bytes = new Uint8Array(44 + n), dv = new DataView(bytes.buffer);
-    function str(o, s) { for (var i = 0; i < s.length; i++) bytes[o + i] = s.charCodeAt(i); }
-    str(0, "RIFF"); dv.setUint32(4, 36 + n, true); str(8, "WAVE"); str(12, "fmt ");
-    dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
-    dv.setUint32(24, 8000, true); dv.setUint32(28, 8000, true); dv.setUint16(32, 1, true); dv.setUint16(34, 8, true);
-    str(36, "data"); dv.setUint32(40, n, true);
-    for (var i = 0; i < n; i++) bytes[44 + i] = 128;
-    var bin = ""; for (var j = 0; j < bytes.length; j++) bin += String.fromCharCode(bytes[j]);
-    return "data:audio/wav;base64," + btoa(bin);
-  }
-  function startKeepAlive() {
-    if (!isIOS) return;
-    try {
-      if (navigator.audioSession) navigator.audioSession.type = "playback";
-      if (!keepAlive) {
-        keepAlive = new Audio(silentWavUri());
-        keepAlive.loop = true; keepAlive.volume = 0.01; keepAlive.setAttribute("playsinline", "");
-      }
-      var p = keepAlive.play(); if (p && p.catch) p.catch(function () {});
-    } catch (e) {}
-  }
+  var actx = null;
   function ensureAudio(force) {
     if (!state.sound && !force) return;
     try {
       actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-      if (actx.state !== "running") { var rp = actx.resume(); if (rp && rp.catch) rp.catch(function () {}); }
-      if (!audioUnlocked) {
-        audioUnlocked = true;
-        var sb = actx.createBufferSource();
-        sb.buffer = actx.createBuffer(1, 1, 22050); sb.connect(actx.destination); sb.start(0);
-      }
-      startKeepAlive();
+      if (actx.state === "suspended") actx.resume();
     } catch (e) {}
   }
-  /* any tap re-wakes audio (iOS suspends it after a call, a lock, or switching apps) */
-  ["touchend", "pointerdown", "click"].forEach(function (ev) {
-    document.addEventListener(ev, function () { if (state.sound) ensureAudio(); }, { passive: true });
-  });
-  document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "hidden") { try { if (keepAlive) keepAlive.pause(); } catch (e) {} }
-    else if (state.sound && actx) ensureAudio();
-  });
   function playSeq(seq, peak, force) {
     if ((!state.sound && !force) || !actx) return;
-    if (actx.state !== "running") {
-      var t0 = Date.now();
-      try { actx.resume().then(function () { if (Date.now() - t0 < 1500) playSeqNow(seq, peak); }, function () {}); } catch (e) {}
-      return;
-    }
-    playSeqNow(seq, peak);
-  }
-  function playSeqNow(seq, peak) {
     try {
       seq.forEach(function (n) {
         var o = actx.createOscillator(), g = actx.createGain();
@@ -2074,7 +2095,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     Object.keys(state).forEach(function (k) { delete state[k]; });
     Object.assign(state, JSON.parse(PRISTINE), {
       care: { on: false, water: true, food: true, snack: true, lunch: true, move: true, lastWater: 0, lastFood: 0, lastMove: 0, lunchDay: "", snooze: {}, lastPrompt: 0, lunchAsked: "", from: "12:00", to: "14:00" },
-      total: 0, savedMs: 0, sfx: "harp", tasks: [], treats: [], done: [], recent: [], log: {}, goalMin: 20, introSeen: false, durFor: {}, bankDay: todayKey()
+      total: 0, savedMs: 0, sfx: "harp", tasks: [], treats: [], done: [], recent: [], log: {}, goalMin: 20, introSeen: false
     });
     state.buddy.extras = [];
     save();
@@ -2332,7 +2353,6 @@ svg[data-mouth="o"] .m-blow { display: initial; }
 
   /* home: free time bank */
   function renderBank() {
-    rolloverBank();
     var goalMs = state.goalMin * 60000;
     var full = state.bankMs >= goalMs;
     $$('input[name="goal"]').forEach(function (i) { i.checked = parseInt(i.value, 10) === state.goalMin; });
@@ -2340,7 +2360,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     $("#bank-text").textContent = full
       ? "Bank is full: " + fmt(state.bankMs) + " saved. Break time is ready."
       : fmt(state.bankMs) + " saved of " + state.goalMin + " min";
-    $("#btn-break-now").hidden = !full || breakRunning();
+    $("#btn-break-now").hidden = !full;
     $("#bank-sum").textContent = full ? "Full: break ready" : fmt(state.bankMs) + " of " + state.goalMin + " min";
   }
   $$('input[name="goal"]').forEach(function (i) {
@@ -2406,12 +2426,6 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     var y = (state.you || "").trim();
     return "Choose your task, we've got this" + (y ? " " + y : "") + ".";
   }
-  var TASK_COLOURS = ["#FFD1DC", "#FFDFBA", "#FFF5BA", "#D4F4C4", "#BAF0DC", "#BFE3FF", "#D9CCFF", "#F0C9F2", "#FFC9C0", "#C2F0F5"];
-  function nextTaskColour() {
-    var used = state.tasks.map(function (x) { return x.c; });
-    for (var i = 0; i < TASK_COLOURS.length; i++) if (used.indexOf(i) < 0) return i;
-    return state.tasks.length % TASK_COLOURS.length;
-  }
   function findTask(id) {
     for (var i = 0; i < state.tasks.length; i++) if (state.tasks[i].id === id) return state.tasks[i];
     return null;
@@ -2430,7 +2444,6 @@ svg[data-mouth="o"] .m-blow { display: initial; }
         var b = document.createElement("button");
         b.type = "button";
         b.className = "task-bubble" + (dense ? " dense" : "") + (tk.id === selId ? " sel" : "");
-        b.style.setProperty("--tc", TASK_COLOURS[(tk.c || 0) % TASK_COLOURS.length]);
         b.style.left = (50 + rx * Math.cos(ang)) + "%";
         b.style.top = (50 + ry * Math.sin(ang)) + "%";
         b.style.setProperty("--dl", (-(k * 0.7 + Math.random() * 1.2)).toFixed(2) + "s");
@@ -2453,7 +2466,6 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   function selectTask(id) {
     var tk = findTask(id);
     if (!tk) return;
-    wakeHome(true);
     selId = id;
     $("#in-task").value = tk.t;
     $("#sel-name").textContent = tk.t;
@@ -2470,13 +2482,10 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   function tryAdd(text) {
     var t = (text || "").trim();
     if (!t) return false;
-    wakeHome(true);
     if (state.tasks.length >= MAX_TASKS) { boardSay("The board is full. Finish one and there's room for more."); return false; }
     if (state.tasks.some(function (x) { return x.t.toLowerCase() === t.toLowerCase(); })) { boardSay("That one is already on the board."); return false; }
     var m = parseInt($("#add-m").value, 10) || 25;
-    var learned = state.durFor[t.toLowerCase()];
-    if (typeof learned === "number" && learned > 0) m = learned;
-    state.tasks.push({ id: Date.now() * 100 + Math.floor(Math.random() * 100), t: t.slice(0, 80), m: m, c: nextTaskColour() });
+    state.tasks.push({ id: Date.now() * 100 + Math.floor(Math.random() * 100), t: t.slice(0, 80), m: m });
     save();
     renderBoard();
     boardSay(selId == null ? homeLine() : "Added. Pick a task when you're ready.");
@@ -2506,7 +2515,6 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     }
   }
   function goHome(note) {
-    homeNap = false; $("#home-buddy").classList.remove("nap");
     applyColour(hexOf(state.race.start));
     setupRacePickers();
     renderPicks(); renderTally(); renderBank(); renderCabinet(); renderTTBtn(); renderTreatNow();
@@ -2517,35 +2525,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     $("#task-err").hidden = true;
     setMood("home-buddy", "idle");
     show("home");
-    renderBreakBanner();
-    if (breakRunning()) { napNext = false; napHome("I'm napping until your break ends."); }
-    else if (napNext && !note) { napNext = false; napHome(); }
   }
-
-  /* the buddy naps on the task page when you open or come back to the app, and wakes when you touch anything */
-  var napNext = true, hiddenAt = 0, homeNap = false;
-  function napHome(msg) {
-    if (document.body.dataset.view !== "home" || session) return;
-    homeNap = true;
-    setMood("home-buddy", "sleep");
-    $("#home-buddy").classList.add("nap");
-    boardSay(nm(msg || "Zzz. Tap me when you're ready."));
-  }
-  function wakeHome(quiet) {
-    if (!homeNap) return;
-    homeNap = false;
-    $("#home-buddy").classList.remove("nap");
-    setMood("home-buddy", "cheer");
-    setTimeout(function () { if (document.body.dataset.view === "home") setMood("home-buddy", "idle"); }, 1100);
-    if (!quiet) boardSay(nm("I'm awake. Pick a task."));
-  }
-  $("#home-buddy").addEventListener("click", function () { wakeHome(false); });
-  document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "hidden") { hiddenAt = Date.now(); return; }
-    if (document.body.dataset.view === "home") { if (state.breakEnd) breakTick(); renderBreakBanner(); }
-    if (hiddenAt && Date.now() - hiddenAt > 20000 && document.body.dataset.view === "home" && !session && !breakRunning()) napHome();
-    hiddenAt = 0;
-  });
 
   /* session */
   var session = null, timer = null;
@@ -2687,11 +2667,13 @@ svg[data-mouth="o"] .m-blow { display: initial; }
 
   /* steps */
   function renderStep() {
-    $("#step-tag").textContent = "Step " + (session.stepsDone + 1);
-    $("#side-tag").textContent = "Step " + (session.stepsDone + 1) + ":";
+    var nSteps = session.steps ? session.steps.length : 0, allDone = nSteps > 0 && session.stepsDone >= nSteps;
+    var tagTxt = nSteps ? (allDone ? "All done" : "Step " + (session.stepsDone + 1) + " of " + nSteps) : "Step " + (session.stepsDone + 1);
+    $("#step-tag").textContent = tagTxt;
+    $("#side-tag").textContent = tagTxt + ":";
     var inp = $("#side-input");
     if (document.activeElement !== inp) inp.value = session.step || "";
-    inp.placeholder = session.stepsDone ? "Type your next step here" : "Type your step here";
+    inp.placeholder = allDone ? "Every step is done. Press I'm done." : (session.stepsDone ? "Type your next step here" : "Type your step here");
     syncSave();
     $("#stage-row").classList.add("has-step");
     $("#step-line").hidden = true;
@@ -2711,6 +2693,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     var v = $("#side-input").value.trim();
     if (!v) return;
     session.step = v;
+    if (session.steps && session.stepsDone < session.steps.length) session.steps[session.stepsDone] = v;
     $("#side-input").blur();
     renderStep();
     say(pick(msgs().stepOn, "stepOn"));
@@ -2721,10 +2704,11 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   function completeStep() {
     var m = msgs();
     session.stepsDone++;
-    session.step = "";
-    $("#side-input").value = "";
+    session.step = session.steps ? (session.steps[session.stepsDone] || "") : "";
+    $("#side-input").value = session.step;
     session.boost = Math.min(0.5, session.boost + STEP_BOOST);
-    say(pick(m.stepDone, "stepDone") + " " + pick(ASK_NEXT, "askNext"));
+    if (session.steps && session.stepsDone >= session.steps.length) say(pick(m.stepDone, "stepDone") + " That was your last step. Press I'm done when you are ready.");
+    else say(pick(m.stepDone, "stepDone") + " " + (session.steps ? "Next up: " + session.step + "." : pick(ASK_NEXT, "askNext")));
     spawnPops(3, session.tier);
     blip();
     renderStep();
@@ -2734,17 +2718,11 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     if (!session) return;
     completeStep();
   });
-  $("#home-form").addEventListener("submit", function (e) {
-    e.preventDefault();
-    var task = $("#in-task").value.trim();
-    if (!task) { $("#task-err").hidden = false; return; }
-    var step = $("#in-step").value.trim();
-    if (state.breakEnd) { clearInterval(breakTimer); breakTimer = null; state.breakEnd = 0; state.breakTotal = 0; state.breakTreat = ""; save(); }
-    var mins = parseInt(($('input[name="dur"]:checked') || {}).value || "10", 10);
+  function beginSession(task, step, mins, steps) {
     ensureAudio(); lock();
     var now = Date.now();
     session = {
-      task: task, taskId: selId, step: step, stepsDone: 0, startedAt: now, endAt: now + mins * 60000, total: mins * 60000, plan: mins * 60000,
+      task: task, taskId: selId, step: step, steps: steps && steps.length ? steps.slice() : null, stepsDone: 0, startedAt: now, endAt: now + mins * 60000, total: mins * 60000, plan: mins * 60000,
       lastMsgAt: now, nextMsgAt: now + 60000, lastTick: now, half: false, last: false, ten: false,
       a: hexToHsl(hexOf(state.race.start)), b: hexToHsl(hexOf(state.race.finish)),
       shown: 0, boost: 0, tier: 0, nextPop: now + 6000
@@ -2757,14 +2735,99 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     session.scene = pickScene();
     setScene($("#ring-wrap"), session.scene);
     slotSvg("session-buddy").dataset.energy = "1";
-    say(nm("Break this into small steps. Do one, then tap me and I'll cheer you on."));
+    say(nm(session.steps ? "Here is your plan. Do the first step, then tap me and I'll cheer you on." : "Break this into small steps. Do one, then tap me and I'll cheer you on."));
     show("session");
     renderStep();
     tick();
     clearInterval(timer);
     timer = setInterval(tick, 250);
+  }
+  function tmode() { return ($('input[name="tmode"]:checked') || {}).value || "one"; }
+  function tmodeUi() {
+    var b = tmode() === "brain";
+    $("#in-step-field").hidden = b;
+    $("#home-go").textContent = b ? "Brainstorm the steps" : "Start the race";
+    $("#tmode-hint").textContent = b ? "List all the small steps first, then choose the order to do them in." : "Do one small step, tap me, then do the next.";
+  }
+  $$('input[name="tmode"]').forEach(function (i) { i.addEventListener("change", tmodeUi); });
+  $("#home-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var task = $("#in-task").value.trim();
+    if (!task) { $("#task-err").hidden = false; return; }
+    var mins = parseInt(($('input[name="dur"]:checked') || {}).value || "10", 10);
+    if (tmode() === "brain") { openBrainstorm(task, mins); return; }
+    beginSession(task, $("#in-step").value.trim(), mins, null);
   });
 
+  /* brainstorm: list the small steps first, then tap them in the order to do them */
+  var bs = { task: "", mins: 10, steps: [], order: [] };
+  var BS_MAX = 12;
+  var BS_SUB = "Brainstorm it out. Add every small step you can think of, in any order.";
+  function openBrainstorm(task, mins) {
+    bs.task = task; bs.mins = mins; bs.steps = []; bs.order = [];
+    $("#bs-title").textContent = task;
+    $("#bs-sub").textContent = BS_SUB;
+    $("#bs-in").value = "";
+    $("#bs-add-stage").hidden = false; $("#bs-order-stage").hidden = true;
+    renderBsList();
+    show("brain");
+  }
+  function renderBsList() {
+    var box = $("#bs-list"); box.textContent = "";
+    bs.steps.forEach(function (t, i) {
+      var d = document.createElement("div"); d.className = "bs-item";
+      var sp = document.createElement("span"); sp.className = "bs-t"; sp.textContent = t;
+      var x = document.createElement("button"); x.type = "button"; x.className = "bs-x"; x.textContent = "×"; x.setAttribute("aria-label", "Remove step: " + t);
+      x.addEventListener("click", function () { bs.steps.splice(i, 1); renderBsList(); });
+      d.appendChild(sp); d.appendChild(x); box.appendChild(d);
+    });
+    $("#bs-count").textContent = bs.steps.length ? bs.steps.length + (bs.steps.length === 1 ? " step" : " steps") + " so far. You can add up to " + BS_MAX + "." : "Add your first step above.";
+    $("#bs-next").disabled = bs.steps.length === 0;
+    $("#bs-add").disabled = bs.steps.length >= BS_MAX;
+  }
+  $("#bs-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var v = $("#bs-in").value.trim();
+    if (!v || bs.steps.length >= BS_MAX) return;
+    bs.steps.push(v); $("#bs-in").value = ""; renderBsList(); $("#bs-in").focus();
+  });
+  function renderBsOrder() {
+    var box = $("#bs-order"); box.textContent = "";
+    bs.steps.forEach(function (t, i) {
+      var pos = bs.order.indexOf(i);
+      var b = document.createElement("button"); b.type = "button"; b.className = "bs-item" + (pos >= 0 ? " on" : "");
+      var n = document.createElement("span"); n.className = "bs-num"; n.textContent = pos >= 0 ? String(pos + 1) : "";
+      var sp = document.createElement("span"); sp.className = "bs-t"; sp.textContent = t;
+      b.appendChild(n); b.appendChild(sp);
+      b.addEventListener("click", function () {
+        var p = bs.order.indexOf(i);
+        if (p >= 0) bs.order.splice(p, 1); else bs.order.push(i);
+        renderBsOrder();
+      });
+      box.appendChild(b);
+    });
+    var left = bs.steps.length - bs.order.length;
+    $("#bs-ocount").textContent = left ? left + (left === 1 ? " step" : " steps") + " left to number. Any you skip go at the end, in the order you added them." : "All in order. Ready when you are.";
+  }
+  $("#bs-next").addEventListener("click", function () {
+    if (!bs.steps.length) return;
+    bs.order = [];
+    $("#bs-add-stage").hidden = true; $("#bs-order-stage").hidden = false;
+    $("#bs-sub").textContent = "Now put them in order.";
+    renderBsOrder(); window.scrollTo(0, 0);
+  });
+  $("#bs-reset").addEventListener("click", function () { bs.order = []; renderBsOrder(); });
+  $("#bs-back").addEventListener("click", function () {
+    $("#bs-add-stage").hidden = false; $("#bs-order-stage").hidden = true;
+    $("#bs-sub").textContent = BS_SUB;
+  });
+  $("#bs-cancel").addEventListener("click", function () { show("home"); });
+  $("#bs-start").addEventListener("click", function () {
+    var idx = bs.order.slice();
+    bs.steps.forEach(function (t, i) { if (idx.indexOf(i) < 0) idx.push(i); });
+    var steps = idx.map(function (i) { return bs.steps[i]; });
+    beginSession(bs.task, steps[0] || "", bs.mins, steps);
+  });
 
   /* hyperfocus self-care: prompts only when a step or task is finished, never mid-focus */
   var CARE = {
@@ -2801,6 +2864,21 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     if (c.water && now - c.lastWater >= 25 * 60000) return "water";
     return "";
   }
+  function fbMaybe() {
+    var card = $("#fb-card");
+    card.hidden = true;
+    if (!PILOT || state.fb.given || session) return;
+    var due = "";
+    if (state.total >= 10 && !state.fb.p10) due = "p10";
+    else if (state.total >= 3 && !state.fb.p3) due = "p3";
+    if (!due) return;
+    state.fb.p3 = true;
+    if (due === "p10") state.fb.p10 = true;
+    save();
+    card.hidden = false;
+  }
+  $("#fb-card-no").addEventListener("click", function () { $("#fb-card").hidden = true; });
+  $("#fb-card-go").addEventListener("click", function () { $("#fb-card").hidden = true; openFeedback(); });
   function careAsk(atTask) {
     if (careKind || !state.care.on) return;
     var now = Date.now(), k = careDue(now, atTask);
@@ -2867,7 +2945,6 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     if (document.visibilityState !== "visible") return;
     if (session) { lock(); tick(); }
     else if (document.body.dataset.view === "break" && state.breakEnd) { breakTick(); }
-    else if (document.body.dataset.view === "home" && rolloverBank()) { renderBank(); }
   });
 
   $("#btn-more").addEventListener("click", function () {
@@ -2901,13 +2978,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     var now = Date.now();
     var rem = s.endAt - now;
     var mins = Math.round((now - s.startedAt) / 60000);
-    var elapsed = now - s.startedAt;
-    var saved = byTimer ? 0 : Math.max(0, s.plan - elapsed);
-    var over = elapsed > s.plan + 15000;
-    var actualMin = Math.max(1, Math.round(elapsed / 60000));
-    var newMin = actualMin;
-    for (var di = 0; di < DUR_OPTS.length; di++) { if (DUR_OPTS[di] >= actualMin) { newMin = DUR_OPTS[di]; break; } }
-    if (over) state.durFor[s.task.toLowerCase()] = newMin;
+    var saved = byTimer ? 0 : Math.max(0, s.plan - (now - s.startedAt));
     endSession();
     var wBefore = warmth();
     var k = todayKey();
@@ -2918,7 +2989,6 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     state.recent = [s.task].concat(state.recent.filter(function (t) { return t !== s.task; })).slice(0, 5);
     if (s.taskId != null) state.tasks = state.tasks.filter(function (x) { return x.id !== s.taskId; });
     state.done = (state.done || []).concat([{ t: s.task, d: k }]).slice(-12);
-    rolloverBank();
     state.bankMs += saved;
     var kBefore = Math.floor(state.savedMs / AWARD_EVERY);
     state.savedMs += saved;
@@ -2926,7 +2996,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     var newAwards = [];
     for (var q = kBefore; q < kAfter; q++) newAwards.push({ kind: AWARD_KINDS[q % 4], mins: (q + 1) * 5 });
     var goalMs = state.goalMin * 60000;
-    var earned = state.bankMs >= goalMs && !over;
+    var earned = state.bankMs >= goalMs;
     var gotTrophy = newAwards.filter(function (a) { return a.kind === "trophy"; }).length;
     state.treatDue += gotTrophy;
     save();
@@ -2934,7 +3004,6 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     var w = warmth();
     $("#done-msg").textContent = wellDone(nm(earned ? pick(msgs().breakMsg, "breakMsg") : pick(msgs().done[w], "done" + w)));
     var parts = [], mile = milestone();
-    if (over) parts.push("That one needed " + actualMin + " minutes. I've set it to " + newMin + " next time.");
     if (mile) parts.push(mile);
     if (w > wBefore) parts.push(state.buddy.name + " is getting more excited about you.");
     if (gotTrophy) parts.push("A trophy earns you a treat. Time to choose one.");
@@ -2945,7 +3014,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     noteEl.hidden = parts.length === 0;
     renderDoneAwards(newAwards);
     $("#d-task").textContent = s.task;
-    $("#d-race").textContent = over ? "Took " + actualMin + " min (planned " + Math.round(s.plan / 60000) + ")" : ((!byTimer && rem >= 1000) ? "Beat the clock by " + fmt(rem) : "Finished right on time");
+    $("#d-race").textContent = (!byTimer && rem >= 1000) ? "Beat the clock by " + fmt(rem) : "Finished right on time";
     $("#d-saved").textContent = saved >= 1000 ? "+" + fmt(saved) : "None";
     $("#d-bank").textContent = fmt(state.bankMs) + " of " + state.goalMin + " min";
     $("#d-steps-row").hidden = s.stepsDone === 0;
@@ -2959,6 +3028,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     $("#d-bank-fill").style.width = "0%";
     setMood("done-buddy", "cheer");
     show("done");
+    fbMaybe();
     careAsk(true);
     setTimeout(function () { $("#d-bank-fill").style.width = Math.min(100, state.bankMs / goalMs * 100) + "%"; }, 80);
     chime();
@@ -2990,15 +3060,8 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     save();
     enterBreak();
   }
-  function breakRunning() { return state.breakEnd > Date.now(); }
-  function renderBreakBanner() {
-    var on = breakRunning();
-    $("#break-banner").hidden = !on;
-    if (on) $("#bb-time").textContent = fmt(state.breakEnd - Date.now());
-  }
   function enterBreak() {
     breakAwake = false;
-    $("#btn-break-peek").hidden = false;
     applyColour(hexOf(state.race.finish));
     renderSlot("break-buddy");
     setMood("break-buddy", "sleep");
@@ -3016,7 +3079,6 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   }
   function wakeBuddy() {
     breakAwake = true;
-    $("#btn-break-peek").hidden = true;
     $("#zzz").hidden = true;
     var bub = $("#break-bubble");
     bub.textContent = nm(pick(msgs().wakeMsg, "wake"));
@@ -3034,16 +3096,9 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     $("#break-time").textContent = fmt(rem);
     var wakeAt = Math.min(WAKE_MS, state.breakTotal / 2);
     if (!breakAwake && rem <= wakeAt) wakeBuddy();
-    if (document.body.dataset.view === "home") renderBreakBanner();
     if (rem <= 0) {
       $("#break-sub").textContent = "Break's over.";
       clearInterval(breakTimer); breakTimer = null;
-      if (document.body.dataset.view !== "break") {
-        /* the break ended while you were looking at your tasks */
-        state.breakEnd = 0; state.breakTotal = 0; state.breakTreat = ""; save();
-        renderBreakBanner(); renderBank();
-        if (document.body.dataset.view === "home") { wakeHome(true); boardSay(nm("Break's over. Pick a task when you're ready.")); }
-      }
     }
   }
   function endBreak() {
@@ -3053,9 +3108,6 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     goHome();
   }
   $("#btn-break-end").addEventListener("click", endBreak);
-  /* look at your tasks while the break keeps running */
-  $("#btn-break-peek").addEventListener("click", function () { goHome(); });
-  $("#bb-back").addEventListener("click", enterBreak);
 
   /* intro: the buddy explains how the app works */
   var introI = 0, introDemo = null;
@@ -3063,17 +3115,17 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     var b = state.buddy.name, y = (state.you || "").trim();
     return [
       { text: (y ? "Hi, " + y + "!" : "Hi!") + " I'm " + b + ". I help you get boring jobs done. I stay with you while you work and I cheer when you finish.", mood: "cheer" },
-      { text: "Step 1: Add your tasks. Open the Tasks tab, type up to 10 jobs and say how long each one takes. They float around me like a brainstorm.", mood: "idle" },
-      { text: "Step 2: Tap one task and press Start the race. A timer counts down and I change colour as time passes. You pick the start and finish colours.", mood: "idle", demo: "colour" },
+      { text: "Step 1: Add your tasks. Open the Tasks tab, type up to 10 jobs and say how long each one takes. They float around me like a brainstorm. Tap a quick add idea to add a regular task in one tap.", mood: "idle" },
+      { text: "Step 2: Tap one task and press Start the race. A timer counts down and I change colour as time passes. You pick the start and finish colours. You can also choose Brainstorm it out to list all the small steps first, then put them in order.", mood: "idle", demo: "colour" },
       { text: "While the timer runs, break the job into small steps. Tap me each time you finish a step and I'll cheer you on to decide what's next. If it helps, you can type a name for each step, or just tap me.", mood: "idle" },
       { text: "Finish before the timer ends and the minutes you saved go in the free time bank. 5 saved minutes wins you a bronze medal, 10 wins a silver, 15 wins a gold and 20 wins a trophy.", mood: "idle", visual: "both" },
       { text: "Each trophy earns you a 20 minute treat. Add your treats on the Treats tab: things that break you away from your tasks and bring you some joy. I nap while you enjoy your break and wake up 3 minutes before it ends.", mood: "sleep" },
-      { text: "Each finished task earns a gold star. Tap Task Tally at the top right to see me bouncing on them. Spend stars in the Buddy shop on things for me, like a crown, a car or a rocket ship. Your progress keeps me bouncy.", mood: "cheer", arrows: ["tally"] },
-      { text: "Tap Buddy, next to Task Tally, to change my shape, colour, features or name.", mood: "cheer", arrows: ["buddy"] },
+      { text: "Each finished task earns a gold star. Tap Task Tally at the top right to see them. Spend stars in the Buddy shop on things for me, like a crown, a car or a rocket ship. Your progress keeps me bouncy.", mood: "cheer", arrows: ["tally"] },
+      { text: "Tap Buddy, next to Task Tally, to change my shape, colour or name.", mood: "cheer", arrows: ["buddy"] },
       { text: "Self care: When you are deep in a task it is easy to forget to drink, eat, move or sometimes even breathe properly. When you finish a step or a task I can nudge you to sip water, have a snack, stretch, have lunch, or take a few slow breaths, and I never interrupt while you focus. Choose what to switch on under Specs, the second icon from the left at the top.", mood: "still", arrows: ["specs"] },
       { text: "Try breathing with me now: Breathe in as I get bigger, then breathe out slowly as I get smaller. Breathing focus mode supports breathing while you work. Breathing exercises are set between tasks.", mood: "still", demo: "breathe", visual: "breathe", arrows: ["specs"] },
       { text: "Tap Help at the top left any time to see these instructions again.", mood: "idle", arrows: ["help"] },
-      { text: "Remember to choose what self-care settings to switch on under Specs. Are you ready to add your first task?", mood: "cheer", arrows: ["specs"] }
+      { text: "Remember to choose what to switch on under Specs, the second icon from the left at the top. Are you ready to add your first task?", mood: "cheer", arrows: ["specs"] }
     ];
   }
   function awardsRow() {
@@ -4018,26 +4070,31 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   /* pilot feedback: testers copy their notes and paste them into a message */
   function fbText() {
     var from = $("#fb-name").value.trim();
+    var feel = ($('input[name="fbfeel"]:checked') || {}).value || "";
+    var helped = $$('input[name="fbhelp"]:checked').map(function (i) { return i.value; });
+    var c = awardCounts();
     var lines = ["Bouncy Buddies pilot feedback"];
     if (from) lines.push("From: " + from);
+    lines.push("Overall: " + (feel || "no answer"));
+    lines.push("What worked: " + (helped.length ? helped.join(", ") : "no answer"));
     function one(n) { return ($('input[name="' + n + '"]:checked') || {}).value || "no answer"; }
-    function txt(id) { return $(id).value.trim() || "nothing mentioned"; }
-    var c = awardCounts();
-    lines.push("Not working: " + txt("#fb-bugs"));
-    lines.push("Overall: " + one("fbfeel"));
-    lines.push("Who it is for: " + txt("#fb-who"));
+    function many(n) { var a = $$('input[name="' + n + '"]:checked').map(function (i) { return i.value; }); return a.length ? a.join(", ") : "no answer"; }
+    lines.push("For: " + one("fbwho"));
     lines.push("Helped me focus: " + one("fbfocus"));
     lines.push("Getting started: " + one("fbstart"));
-    lines.push("The cheering: " + txt("#fb-cheer"));
+    lines.push("Amount of cheering: " + one("fbamount"));
+    lines.push("Favourite cheer style: " + one("fbcheer"));
     lines.push("Feels like my buddy: " + one("fbmine"));
-    lines.push("Dream buddy: " + txt("#fb-dream"));
+    lines.push("Buddy to do or look like: " + ($("#fb-want").value.trim() || "nothing mentioned"));
+    lines.push("Dream buddy: " + ($("#fb-dream").value.trim() || "nothing mentioned"));
     lines.push("Self-care prompts: " + one("fbcare"));
-    lines.push("What worked: " + txt("#fb-worked"));
-    lines.push("Using it again and every day: " + txt("#fb-daily"));
-    lines.push("Improve first: " + txt("#fb-first"));
-    lines.push("Other ideas: " + txt("#fb-idea"));
-    lines.push("Confusing: " + txt("#fb-confuse"));
-    lines.push("Add or change: " + txt("#fb-change"));
+    lines.push("Would use again: " + one("fbagain"));
+    lines.push("To use it every day: " + ($("#fb-daily").value.trim() || "nothing mentioned"));
+    lines.push("Improve first: " + ($("#fb-first").value.trim() || "nothing mentioned"));
+    lines.push("Other ideas: " + ($("#fb-idea").value.trim() || "nothing mentioned"));
+    lines.push("Confusing: " + ($("#fb-confuse").value.trim() || "nothing mentioned"));
+    lines.push("Add or change: " + ($("#fb-change").value.trim() || "nothing mentioned"));
+    lines.push("Not working: " + ($("#fb-bugs").value.trim() || "nothing mentioned"));
     lines.push("Stats: " + state.total + " tasks finished, " + fmt(state.savedMs) + " saved, medals " + c.bronze + " bronze / " + c.silver + " silver / " + c.gold + " gold, trophies " + c.trophy);
     lines.push("Buddy: " + SHAPES[state.buddy.shape].label + ", " + state.buddy.style + " cheers, sound " + SFX[state.sfx].label);
     lines.push("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -4071,6 +4128,21 @@ svg[data-mouth="o"] .m-blow { display: initial; }
       } else { fallback(); }
     } catch (e) { fallback(); }
   });
+  $("#fb-mail").addEventListener("click", function () {
+    renderFb();
+    var body = fbText();
+    var note = "\n\n(Trimmed to fit. Please use Copy my feedback in the app for the full text.)";
+    var max = 1700;
+    while (encodeURIComponent(body).length > max && body.length > 200) body = body.slice(0, body.length - 100);
+    if (body !== fbText()) body += note;
+    var href = "mailto:bristolbrainbuddies@gmail.com?subject=" + encodeURIComponent("Bouncy Buddies pilot feedback") + "&body=" + encodeURIComponent(body);
+    state.fb.given = true; save();
+    var msg = $("#fb-done");
+    msg.textContent = "Your email app should open with your feedback ready. Press send there. If nothing opens, use Copy my feedback instead.";
+    msg.hidden = false;
+    window.location.href = href;
+  });
+  $("#fb-copy").addEventListener("click", function () { state.fb.given = true; save(); });
   $("#fb-back").addEventListener("click", function () { goHome(); });
   $("#btn-feedback").addEventListener("click", openFeedback);
   $("#btn-feedback-home").addEventListener("click", openFeedback);
@@ -4138,6 +4210,8 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     $("#pilot-banner").hidden = false;
     $("#btn-feedback").hidden = false;
     $("#btn-feedback-home").hidden = false;
+    $("#specs-feedback").hidden = false;
+    $("#specs-feedback").addEventListener("click", openFeedback);
   }
   renderSound();
   renderTTBtn();
