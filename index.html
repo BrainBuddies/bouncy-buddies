@@ -425,6 +425,24 @@ select:focus-visible { outline: 3px solid var(--buddy); outline-offset: 1px; }
 #care-bmode { font: inherit; padding: 8px 12px; min-height: 44px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); max-width: 100%; }
 .lunch-row input { font: inherit; padding: 8px 12px; min-height: 44px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); }
 .care-card[hidden] { display: none; }
+.timeup { width: 100%; box-sizing: border-box; margin: 10px 0; padding: 14px; border-radius: 18px; border: 2px solid var(--buddy, #3FC1C9); background: var(--surface); text-align: left; }
+.timeup[hidden], .chk[hidden], #tu-choose[hidden], #tu-time[hidden], .resume-card[hidden] { display: none; }
+.timeup h2 { margin: 0 0 4px; font-family: var(--font-display); font-size: 1.35rem; color: var(--ink); }
+.timeup p { margin: 0 0 10px; color: var(--muted); }
+.timeup .btn { width: 100%; margin-top: 8px; }
+.tu-times { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.tu-times .btn { margin-top: 0; padding-left: 4px; padding-right: 4px; }
+.chk { width: 100%; box-sizing: border-box; margin: 8px 0; padding: 10px 12px; border-radius: 16px; border: 2px solid var(--line); background: var(--surface); text-align: left; }
+.chk h3 { margin: 0 0 6px; font-size: 1rem; color: var(--ink); }
+.chk-item { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 4px 0; font-weight: 700; color: var(--ink); cursor: pointer; }
+.chk-item input { width: 24px; height: 24px; flex: none; accent-color: var(--buddy, #3FC1C9); }
+.chk-item span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.chk-item.is-done span { text-decoration: line-through; color: var(--muted); }
+.chk-none { margin: 0; color: var(--muted); }
+#view-session.over .controls { display: none; }
+#view-session.over .time { opacity: .55; }
+.resume-card { margin: 8px 0 12px; padding: 10px 12px; border-radius: 14px; border: 2px solid var(--line); background: var(--surface); }
+.resume-card p { margin: 0 0 4px; color: var(--ink); font-weight: 700; }
 .care-ico { font-size: 2rem; line-height: 1; }
 .care-body { display: grid; gap: 2px; }
 .care-body span { font-size: 0.95rem; }
@@ -895,13 +913,14 @@ svg[data-mouth="o"] .m-blow { display: initial; }
         <p class="sel-name" id="sel-name"></p>
         <button type="button" class="btn-text" id="sel-remove">Take it off the board</button>
       </div>
+      <div class="resume-card" id="resume-note" hidden><p id="resume-text"></p><button type="button" class="btn-text" id="resume-fresh">Start the steps again</button></div>
       <input type="hidden" id="in-task" value="">
       <div class="field" id="in-step-field">
         <label class="lbl" for="in-step">First small step <span class="hint">(optional)</span></label>
         <input type="text" id="in-step" maxlength="80" autocomplete="off" placeholder="e.g. Open the inbox">
       </div>
       <p class="err" id="task-err" role="alert" hidden>Tap a task on the board first.</p>
-      <fieldset>
+      <fieldset id="tmode-fs">
         <legend>How do you want to tackle it?</legend>
         <div class="chips" id="tmodes">
           <label class="chip"><input type="radio" name="tmode" value="one" checked><span>One step at a time</span></label>
@@ -1016,6 +1035,21 @@ svg[data-mouth="o"] .m-blow { display: initial; }
       <p class="hint-line" id="step-hint"></p>
       <p class="hint-line" id="step-count" hidden></p>
     </div>
+    <div class="timeup" id="timeup" role="alert" hidden>
+      <h2>Time's up</h2>
+      <p id="tu-p"></p>
+      <div id="tu-choose">
+        <button type="button" class="btn btn-primary" id="tu-keep">Keep working on it</button>
+        <button type="button" class="btn btn-ghost" id="tu-else">Do something else</button>
+        <button type="button" class="btn-text" id="tu-done">It's all done</button>
+      </div>
+      <div id="tu-time" hidden>
+        <p>How much longer?</p>
+        <div class="tu-times"><button type="button" class="btn btn-ghost" data-m="5">5 min</button><button type="button" class="btn btn-ghost" data-m="10">10 min</button><button type="button" class="btn btn-ghost" data-m="15">15 min</button><button type="button" class="btn btn-ghost" data-m="25">25 min</button></div>
+        <button type="button" class="btn-text" id="tu-back">Back</button>
+      </div>
+    </div>
+    <div class="chk" id="chk" hidden><h3>Tick off your steps</h3><div id="chk-list"></div></div>
     <div class="bf-wrap"><p class="br-say" id="bf-say" aria-live="off" hidden></p></div>
     <div class="controls">
       <button type="button" class="btn btn-primary" id="btn-finish">I'm done</button>
@@ -1023,6 +1057,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
         <button type="button" class="btn btn-ghost" id="btn-more">+5 min</button>
         <button type="button" class="btn btn-ghost" id="btn-stop">Stop for now</button>
       </div>
+      <button type="button" class="btn-text" id="btn-steps">Tick off steps</button>
     </div>
   </section>
 
@@ -1956,7 +1991,10 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   if (!SFX[state.sfx] || SFX_KEYS.indexOf(state.sfx) < 0) state.sfx = "harp";
   if (!Array.isArray(state.tasks)) state.tasks = [];
   state.tasks = state.tasks.filter(function (x) { return x && typeof x.t === "string" && x.t && typeof x.id === "number"; }).slice(0, 10)
-    .map(function (x) { return { id: x.id, t: x.t, m: typeof x.m === "number" && x.m > 0 ? x.m : 25 }; });
+    .map(function (x) {
+      var sv = x.saved && typeof x.saved === "object" ? { steps: Array.isArray(x.saved.steps) ? x.saved.steps.filter(function (q) { return typeof q === "string" && q; }).slice(0, 12) : null, done: Math.max(0, parseInt(x.saved.done, 10) || 0), step: typeof x.saved.step === "string" ? x.saved.step.slice(0, 80) : "" } : undefined;
+      return { id: x.id, t: x.t, m: typeof x.m === "number" && x.m > 0 ? x.m : 25, saved: sv };
+    });
   if (!Array.isArray(state.treats)) state.treats = [];
   state.treats = state.treats.filter(function (x) { return x && typeof x.t === "string" && x.t && typeof x.id === "number"; }).slice(0, 10);
   if (typeof state.treatDue !== "number" || state.treatDue < 0) state.treatDue = 0;
@@ -2386,7 +2424,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   }
 
   /* task board: up to 10 tasks sit around the buddy */
-  var MAX_TASKS = 10, selId = null;
+  var MAX_TASKS = 10, selId = null, resumeSaved = null;
   var PLAN_MAX = 480;
   var DUR_OPTS = [5, 10, 15, 20, 25, 30, 45, 60, 90, 120, 180];
   function fmtMin(m) {
@@ -2472,6 +2510,24 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     $("#task-err").hidden = true;
     $("#home-form").hidden = false;
     var dr = $('input[name="dur"][value="' + tk.m + '"]'); if (dr) dr.checked = true;
+    resumeSaved = null;
+    $("#resume-note").hidden = true; $("#tmode-fs").hidden = false;
+    $("#in-step").value = "";
+    tmodeUi();
+    var sv = tk.saved;
+    if (sv && (sv.steps || sv.done || sv.step)) {
+      resumeSaved = sv;
+      $("#resume-note").hidden = false;
+      if (sv.steps && sv.steps.length) {
+        var d0 = Math.min(sv.done, sv.steps.length);
+        $("#resume-text").textContent = "Your steps are saved. " + d0 + " of " + sv.steps.length + " done." + (d0 < sv.steps.length ? " Next: " + sv.steps[d0] + "." : "");
+        $("#tmode-fs").hidden = true; $("#in-step-field").hidden = true;
+        $("#home-go").textContent = "Carry on with my steps";
+      } else {
+        $("#resume-text").textContent = "Last time you got " + sv.done + (sv.done === 1 ? " step" : " steps") + " done." + (sv.step ? " Your next step is filled in." : "");
+        $("#in-step").value = sv.step || "";
+      }
+    }
     renderBoard();
     boardSay(nm(pick(SELECT_LINES, "sel")));
     setMood("home-buddy", "cheer");
@@ -2683,7 +2739,52 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     var cnt = $("#step-count");
     cnt.textContent = session.stepsDone + (session.stepsDone === 1 ? " step done" : " steps done");
     cnt.hidden = session.stepsDone === 0;
+    if (!$("#chk").hidden) renderChk();
+    if (session.over) $("#tu-p").textContent = tuText();
   }
+  function stepItems() {
+    var s = session, out = [];
+    if (s.steps) s.steps.forEach(function (t, i) { out.push({ t: t, done: i < s.stepsDone }); });
+    else { (s.hist || []).forEach(function (t) { out.push({ t: t, done: true }); }); if (s.step) out.push({ t: s.step, done: false }); }
+    return out;
+  }
+  function renderChk() {
+    var box = $("#chk-list"); box.textContent = "";
+    if (!session) return;
+    var items = stepItems(), s = session, hl = (s.hist || []).length;
+    if (!items.length) { var p = document.createElement("p"); p.className = "chk-none"; p.textContent = "No steps yet. Type one in the box beside me."; box.appendChild(p); return; }
+    items.forEach(function (it, i) {
+      var lab = document.createElement("label"); lab.className = "chk-item" + (it.done ? " is-done" : "");
+      var cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = it.done;
+      if (!s.steps) cb.disabled = !((!it.done && i === hl) || (it.done && i === hl - 1));
+      var sp = document.createElement("span"); sp.textContent = it.t;
+      cb.addEventListener("change", function () { tickStep(i, cb.checked); });
+      lab.appendChild(cb); lab.appendChild(sp); box.appendChild(lab);
+    });
+  }
+  function tickStep(i, on) {
+    var s = session; if (!s) return;
+    if (s.steps) {
+      var before = s.stepsDone;
+      s.stepsDone = on ? i + 1 : i;
+      s.step = s.steps[s.stepsDone] || "";
+      $("#side-input").value = s.step;
+      if (on && s.stepsDone > before) { s.boost = Math.min(0.5, s.boost + STEP_BOOST); spawnPops(2, s.tier); blip(); }
+      renderStep();
+    } else if (on) {
+      completeStep();
+    } else if (s.hist && s.hist.length) {
+      s.step = s.hist.pop(); s.stepsDone = Math.max(0, s.stepsDone - 1);
+      $("#side-input").value = s.step; renderStep();
+    }
+  }
+  $("#btn-steps").addEventListener("click", function () {
+    var c = $("#chk"); if (!session) return;
+    if (session.over) return;
+    c.hidden = !c.hidden;
+    if (!c.hidden) renderChk();
+    $("#btn-steps").textContent = c.hidden ? "Tick off steps" : "Hide steps";
+  });
   function syncSave() {
     var v = $("#side-input").value.trim();
     $("#side-save").hidden = !session || v === "" || v === (session.step || "");
@@ -2703,6 +2804,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   $("#side-save").addEventListener("click", saveStep);
   function completeStep() {
     var m = msgs();
+    if (!session.steps && session.step) (session.hist = session.hist || []).push(session.step);
     session.stepsDone++;
     session.step = session.steps ? (session.steps[session.stepsDone] || "") : "";
     $("#side-input").value = session.step;
@@ -2723,6 +2825,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     var now = Date.now();
     session = {
       task: task, taskId: selId, step: step, steps: steps && steps.length ? steps.slice() : null, stepsDone: 0, startedAt: now, endAt: now + mins * 60000, total: mins * 60000, plan: mins * 60000,
+      hist: [], over: false,
       lastMsgAt: now, nextMsgAt: now + 60000, lastTick: now, half: false, last: false, ten: false,
       a: hexToHsl(hexOf(state.race.start)), b: hexToHsl(hexOf(state.race.finish)),
       shown: 0, boost: 0, tier: 0, nextPop: now + 6000
@@ -2736,6 +2839,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     setScene($("#ring-wrap"), session.scene);
     slotSvg("session-buddy").dataset.energy = "1";
     say(nm(session.steps ? "Here is your plan. Do the first step, then tap me and I'll cheer you on." : "Break this into small steps. Do one, then tap me and I'll cheer you on."));
+    $("#chk").hidden = true; $("#timeup").hidden = true; $("#view-session").classList.remove("over"); $("#btn-steps").textContent = "Tick off steps";
     show("session");
     renderStep();
     tick();
@@ -2755,8 +2859,21 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     var task = $("#in-task").value.trim();
     if (!task) { $("#task-err").hidden = false; return; }
     var mins = parseInt(($('input[name="dur"]:checked') || {}).value || "10", 10);
+    if (resumeSaved && resumeSaved.steps && resumeSaved.steps.length) {
+      var st = resumeSaved.steps, d = Math.min(resumeSaved.done, st.length);
+      beginSession(task, st[d] || "", mins, st);
+      session.stepsDone = d; session.step = st[d] || ""; $("#side-input").value = session.step; renderStep();
+      return;
+    }
     if (tmode() === "brain") { openBrainstorm(task, mins); return; }
     beginSession(task, $("#in-step").value.trim(), mins, null);
+    if (resumeSaved && resumeSaved.done) { session.stepsDone = resumeSaved.done; renderStep(); }
+  });
+  $("#resume-fresh").addEventListener("click", function () {
+    var tk = findTask(selId);
+    if (tk) { delete tk.saved; save(); }
+    resumeSaved = null; $("#resume-note").hidden = true; $("#tmode-fs").hidden = false; $("#in-step").value = "";
+    tmodeUi();
   });
 
   /* brainstorm: list the small steps first, then tap them in the order to do them */
@@ -2923,8 +3040,9 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   $("#care-later-d").addEventListener("click", function () { careClose(false); });
   function tick() {
     if (!session) return;
+    if (session.over) return;
     var now = Date.now(), rem = session.endAt - now;
-    if (rem <= 0) { finish(true); return; }
+    if (rem <= 0) { timeUp(); return; }
     $("#time").textContent = fmt(rem);
     var prog = 1 - rem / session.total;
     $("#ring-bar").setAttribute("stroke-dashoffset", String(RING * (1 - prog)));
@@ -2947,6 +3065,53 @@ svg[data-mouth="o"] .m-blow { display: initial; }
     else if (document.body.dataset.view === "break" && state.breakEnd) { breakTick(); }
   });
 
+  function tuText() {
+    var s = session;
+    var n = s.steps ? s.stepsDone + " of " + s.steps.length + " steps are ticked off." : (s.stepsDone ? s.stepsDone + (s.stepsDone === 1 ? " step is" : " steps are") + " ticked off." : "No steps are ticked off yet.");
+    return n + " Tick off anything you have done, then choose what happens next.";
+  }
+  function timeUp() {
+    var s = session; if (!s || s.over) return;
+    s.over = true;
+    $("#time").textContent = "0:00";
+    $("#ring-bar").setAttribute("stroke-dashoffset", "0");
+    $("#tu-p").textContent = tuText();
+    $("#tu-choose").hidden = false; $("#tu-time").hidden = true;
+    $("#timeup").hidden = false; $("#chk").hidden = false; renderChk();
+    $("#view-session").classList.add("over");
+    say("Time's up. Tick off what you have done. Then you can carry on or do something else.");
+    blip();
+    try { $("#timeup").scrollIntoView({ block: "nearest" }); } catch (e) {}
+  }
+  function saveForLater() {
+    var s = session; if (!s) return;
+    if (!(s.steps || s.stepsDone || s.step)) return;
+    var tk = s.taskId != null ? findTask(s.taskId) : null;
+    if (!tk && state.tasks.length < MAX_TASKS) {
+      tk = { id: Date.now() * 100 + Math.floor(Math.random() * 100), t: s.task.slice(0, 80), m: Math.max(5, Math.round(s.plan / 60000)) };
+      state.tasks.push(tk);
+    }
+    if (tk) { tk.saved = { steps: s.steps ? s.steps.slice() : null, done: s.stepsDone, step: s.step || "" }; }
+    save();
+  }
+  function keepGoing(mins) {
+    var s = session; if (!s) return;
+    var now = Date.now();
+    s.over = false; s.endAt = now + mins * 60000; s.total = mins * 60000; s.plan = (now - s.startedAt) + mins * 60000;
+    s.half = false; s.last = false; s.ten = false; s.nextMsgAt = now + 60000; s.lastTick = now; s.shown = 0; s.boost = 0; s.tier = 0;
+    $("#timeup").hidden = true; $("#chk").hidden = true; $("#view-session").classList.remove("over"); $("#btn-steps").textContent = "Tick off steps";
+    say("Back to it. " + mins + " more minutes.");
+    tick();
+  }
+  $("#tu-keep").addEventListener("click", function () { $("#tu-choose").hidden = true; $("#tu-time").hidden = false; });
+  $("#tu-back").addEventListener("click", function () { $("#tu-choose").hidden = false; $("#tu-time").hidden = true; });
+  $$("#tu-time [data-m]").forEach(function (b) { b.addEventListener("click", function () { keepGoing(parseInt(b.getAttribute("data-m"), 10)); }); });
+  $("#tu-else").addEventListener("click", function () {
+    var t = session ? session.task : "";
+    saveForLater(); endSession();
+    goHome("Your steps are saved with \u201c" + t + "\u201d. Pick it up whenever you are ready.");
+  });
+  $("#tu-done").addEventListener("click", function () { finish(true); });
   $("#btn-more").addEventListener("click", function () {
     if (!session) return;
     session.endAt += 300000; session.total += 300000;
@@ -2958,6 +3123,7 @@ svg[data-mouth="o"] .m-blow { display: initial; }
   });
   $("#btn-stop").addEventListener("click", function () {
     var note = pick(msgs().stop, "stop");
+    saveForLater();
     endSession();
     goHome(note);
   });
